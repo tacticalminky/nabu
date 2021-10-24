@@ -1,3 +1,24 @@
+ul.topnav {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: blue;
+}
+ul.topnav li {
+    float: right;
+}
+ul.topnav li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    text-decoration: none;
+}
+ul.topnav li a:hover {
+    background-color: coral;
+}
+
 body {
     background-color: lavender;
 }
