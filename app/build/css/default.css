@@ -46,6 +46,7 @@ ul.topnav li.dropdown {
     background-color: purple;
     font-size: .75em;
     padding: 5px;
+    z-index: 1;
 }
 .dropdown-content a {
     padding: 10px;
