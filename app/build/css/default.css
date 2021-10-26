@@ -4,7 +4,7 @@ ul.topnav {
     padding: 0;
     width: 100%;
     overflow: hidden;
-    background-color: purple;
+    background-color: slategrey;
     font-size: 20px;
 }
 ul.topnav li {
@@ -15,18 +15,11 @@ ul.topnav li i {
     font-size: 30px;
     padding: 5px 10px;
 }
-ul.topnav li h1 {
-    color: white;
-    font-size: 1em;
-    font-weight: 100;
-    margin: 10px;
-    padding: 0;
-}
 ul.topnav li a {
-    display: block;
+    float: left;
     color: white;
     text-align: center;
-    font-size: 1em;
+    font-size: 20px;
     padding: 10px;
     text-decoration: none;
 }
@@ -36,14 +29,14 @@ ul.topnav li a:hover {
 ul.topnav li.dropdown {
     float: right;
     color: white;
-    font-size: 1em;
+    font-size: 30px;
     padding: 5px 10px;
 }
 .dropdown-content {
     display: none;
     position: absolute;
     right: 0;
-    background-color: purple;
+    background-color: slategrey;
     font-size: .75em;
     padding: 5px;
     z-index: 1;
@@ -57,9 +50,5 @@ ul.topnav li.dropdown {
 }
 
 body {
-    background-color: lavender;
-}
-
-h1 {
-    color: black;
+    background-color: azure;
 }
