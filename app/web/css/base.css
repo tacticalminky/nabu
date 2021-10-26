@@ -1,44 +1,47 @@
+/* || GLOBAL */
 body {
-    background-color: azure;
+    background-color: slategrey;
+    color: white;
 }
 
+/* || TOPNAV */
 .topnav {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: center;
     width: 100%;
     height: min-content;
-    background-color: slategrey;
+    background-color: darkslategrey;
 }
 .topnav a {
     color: white;
     text-align: center;
+    text-decoration: none;
     font-size: 20px;
     padding: 8px 12px;
-    text-decoration: none;
 }
 .topnav a:hover {
     background-color: coral;
 }
-.topnav .dropdown {
+.topnav-dropdown {
     display: inline-block;
     position: relative;
     color: white;
     font-size: 24px;
     padding: 6px 12px;
 }
-.dropdown-content {
+.topnav-dropdown-content {
     display: none;
     position: absolute;
     right: 0;
-    background-color: slategrey;
+    background-color: darkslategrey;
     z-index: 1;
 }
-.dropdown-content a {
+.topnav-dropdown-content a {
+    text-decoration: none;
     font-size: 16px;
     padding: 6px 12px;
-    text-decoration: none;
 }
-.dropdown:hover .dropdown-content {
+.topnav-dropdown:hover .topnav-dropdown-content {
     display: block;
 }

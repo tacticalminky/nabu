@@ -1,0 +1,21 @@
+.library-view {
+    display: block;
+}
+.library-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: min-content;
+    background-color: grey;
+}
+.library-nav a {
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    font-size: 16px;
+    padding: 6px 12px; 
+}
+.library-nav a:hover {
+    background-color: coral;
+}
