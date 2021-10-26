@@ -1,54 +1,44 @@
-ul.topnav {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
+body {
+    background-color: azure;
+}
+
+.topnav {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
     width: 100%;
-    overflow: hidden;
+    height: min-content;
     background-color: slategrey;
-    font-size: 20px;
 }
-ul.topnav li {
-    float: left;
-}
-ul.topnav li i {
-    color: white;
-    font-size: 30px;
-    padding: 5px 10px;
-}
-ul.topnav li a {
-    float: left;
+.topnav a {
     color: white;
     text-align: center;
     font-size: 20px;
-    padding: 10px;
+    padding: 8px 12px;
     text-decoration: none;
 }
-ul.topnav li a:hover {
+.topnav a:hover {
     background-color: coral;
 }
-ul.topnav li.dropdown {
-    float: right;
+.topnav .dropdown {
+    display: inline-block;
+    position: relative;
     color: white;
-    font-size: 30px;
-    padding: 5px 10px;
+    font-size: 24px;
+    padding: 6px 12px;
 }
 .dropdown-content {
     display: none;
     position: absolute;
     right: 0;
     background-color: slategrey;
-    font-size: .75em;
-    padding: 5px;
     z-index: 1;
 }
 .dropdown-content a {
-    padding: 10px;
+    font-size: 16px;
+    padding: 6px 12px;
     text-decoration: none;
 }
 .dropdown:hover .dropdown-content {
     display: block;
-}
-
-body {
-    background-color: azure;
 }
