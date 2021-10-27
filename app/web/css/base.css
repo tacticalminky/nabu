@@ -1,7 +1,8 @@
-/* || GLOBAL */
+/* || PAGE WIDE */
 body {
     background-color: slategrey;
     color: white;
+    font-size: 16px;
 }
 
 /* || TOPNAV */
@@ -10,15 +11,15 @@ body {
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: min-content;
+    height: 2.25rem;
     background-color: darkslategrey;
 }
 .topnav a {
     color: white;
     text-align: center;
     text-decoration: none;
-    font-size: 20px;
-    padding: 8px 12px;
+    font-size: 1.25rem;
+    padding: .125rem .5rem;
 }
 .topnav a:hover {
     background-color: coral;
@@ -27,8 +28,8 @@ body {
     display: inline-block;
     position: relative;
     color: white;
-    font-size: 24px;
-    padding: 6px 12px;
+    font-size: 1.5rem;
+    padding: .125rem .5rem;
 }
 .topnav-dropdown-content {
     display: none;
@@ -39,8 +40,8 @@ body {
 }
 .topnav-dropdown-content a {
     text-decoration: none;
-    font-size: 16px;
-    padding: 6px 12px;
+    font-size: 1rem;
+    padding: .125rem .5rem;
 }
 .topnav-dropdown:hover .topnav-dropdown-content {
     display: block;
