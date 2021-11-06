@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nabu eReader</title>
+        <meta name="robots" content="noindex">
+        <title>Nabu eReader - Library</title>
         <link rel="stylesheet" href="../css/base.css">
         <link rel="stylesheet" href="../css/library.css">
         <link rel="stylesheet" href="../css/font-awesome/css/all.min.css">
@@ -29,5 +30,25 @@
             <a href="./library.html">Library</a>
             <div style="flex-grow: 2.5;"></div>
         </nav>
+        <div class="content">
+            <template id="book-template">
+                <div class="book">
+                    <button onclick=""><img src="book-icon.png" alt="BookFileName"></button>
+                    <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
+                    <h2>Book Title</h2>
+                    <p>Volume ##</p>
+                    <p>Other Viewable</p>
+                </div>
+            </template>
+            <template id="series-template">
+                <div class="series">
+                    <button onclick=""><img src="series-icon.png" alt="SeriesName"></button>
+                    <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
+                    <h2>Series Name</h2>
+                    <p>Volume Count</p>
+                    <p>Other Viewable</p>
+                </div>
+            </template>
+        </div>
     </body>
 </html>
