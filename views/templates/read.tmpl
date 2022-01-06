@@ -1,0 +1,13 @@
+<% skin myskin %>
+<% view read uses content::Read extends master %>
+
+<% template page_content() %>
+    <div id="pages" class="pages"></div>
+    <script src="/resources/js/read.js"></script>
+    <script>
+        myFetch({ method: "read", "params": [ '<%= book_id %>' ], "id": 1 });
+    </script>
+<% end template %>
+
+<% end view %>
+<% end skin %>

@@ -1,0 +1,164 @@
+/* || PAGE WIDE */
+* {
+    color: white;
+}
+body {
+    background-color: slategrey;
+    font-size: 16px;
+}
+
+/* || TOPNAV */
+.topnav {
+    background-color: darkslategrey;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 2.25rem;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+}
+.topnav a {
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.25rem;
+    padding: .125rem .5rem;
+}
+.topnav a:hover {
+    background-color: coral;
+}
+.topnav-dropdown {
+    display: inline-block;
+    position: relative;
+    font-size: 1.5rem;
+    padding: .125rem .5rem;
+}
+.topnav-dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: darkslategrey;
+    z-index: 1;
+}
+.topnav-dropdown-content a {
+    text-decoration: none;
+    font-size: 1rem;
+    padding: .125rem .5rem;
+}
+.topnav-dropdown:hover .topnav-dropdown-content {
+    display: block;
+}
+
+/* || LIBRARY NAV */
+.library-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 2rem;
+    background-color: grey;
+}
+.library-nav a {
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.2rem;
+    padding: .125rem .5rem; 
+}
+.library-nav a:hover {
+    background-color: coral;
+}
+
+/* || LIBRARY CONTENT */
+.library-content {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 2rem;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin: 1rem;
+}
+
+/* || INDIVIDUAL BOOKS */
+.book {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    width: 8rem;
+    height: 16rem;
+}
+.book button {
+    display: contents;
+}
+.book button img {
+    width: 100%;
+    height: auto;
+}
+.book .progress {
+    background-color: lightgrey;
+    width: 100%;
+    height: 2.5%;
+    border-radius: .175rem;
+}
+.book .progress-bar {
+    background-color: green;
+    width: 100%;
+    height: 100%;
+    border-radius: .175rem;
+}
+.book h2 {
+    font-size: .875rem;
+    font-weight: 100;
+    text-align: center;
+    max-height: 1.25em;
+    overflow-y: hidden;
+    margin: .15rem;
+}
+.book h2:hover {
+    animation-delay: 5ms;
+    max-height: min-content;
+}
+.book p {
+    font-size: .8rem;
+    text-align: center;
+    margin: 0;
+}
+
+/* || SETTINGS NAV */
+.settings-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 2rem;
+    background-color: grey;
+}
+.settings-nav a {
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.2rem;
+    padding: .125rem .5rem; 
+}
+.settings-nav a:hover {
+    background-color: coral;
+}
+
+/* || SETTINGS CONTENT */
+.settings-content h2 {
+    font-size: 1.6rem;
+}
+.settings-content h3 {
+    font-size: 1.25rem;
+}
+.settings-content p {
+    font-size: 1rem;
+}
+
+/* || MOBILE DIVICES */
+@media all and (max-width: 767px) {
+    
+}
