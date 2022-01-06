@@ -1,6 +1,6 @@
 ### Testing materials ###
 .vscode/*
-testing/tmp/*
+testing/*
 
 ### Build files ###
 main.o
