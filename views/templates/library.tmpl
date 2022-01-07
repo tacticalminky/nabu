@@ -7,14 +7,14 @@
     <% item %>
         <% if item.isCollection %>
         <div class="media-item" id='<%= item.id %>'>
-            <a href='<% url "collection" using item.id %>'><img src='/covers/<%= item.cover %>' alt='<%= item.title %>'></a>
+            <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' onclick=''></a>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
             <p><%= item.volumes %></p>
         </div>
         <% else %>
         <div class="media-item" id='<%= item.id %>'>
-            <a href='<% url "read" using item.id %>'><img src='/covers/<%= item.cover %>' alt='<%= item.title %>'></a>
+            <a href='<% url "read" %>?id=<%= item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>'></a>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
             <p><%= item.volumes %></p>
@@ -24,22 +24,22 @@
     <% end %>
 
     <div class="media-item">
-        <a href=""><img src="/covers/vegabond-v01.jpg" alt="BookFileName"></a>
+        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="BookFileName" onclick="openRead();loadInit(0)">
         <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
         <h2>The Beginners Guide to Bicycle Commuting</h2>
     </div>
     <div class="media-item">
-        <a href=""><img src='/covers/vegabond-v01.jpg' alt='BookFileName'></a>
+        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="BookFileName" onclick="">
         <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
         <h2>Bash Command Line and Shell Scripts Pocket Primer</h2>
     </div>
     <div class="media-item">
-        <a href=""><img src="/covers/vegabond-v01.jpg" alt="BookFileName"></a>
+        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="BookFileName" onclick="">
         <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
         <h2>Transformers Historyia</h2>
     </div>
     <div class="media-item">
-        <a href=""><img src="/covers/vegabond-v01.jpg" alt="Vagabond"></a>
+        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="Vagabond" onclick="">
         <div class="progress"><div class="progress-bar" style="width: 83%;"></div></div>
         <h2>Vegabond</h2>
         <p>Volume 1</p>

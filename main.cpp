@@ -14,51 +14,214 @@
 
 namespace services {
 
-    class JsonService : public cppcms::rpc::json_rpc_server {
+    /**
+     * 
+     */
+    class ReadingRPC : public cppcms::rpc::json_rpc_server {
+    private:
+        int pageChunkSizeForwards, pageChunkSizeBackwards; // number of pages to be loaded per call defined in config.json
+        int pageCount, firstPageLoaded, lastPageLoaded, currentPage;
+        std::string id;
+        mupdf::Document* doc;
+        mupdf::Matrix myMatrix;
+        mupdf::Colorspace myColor;
+    
     public:
-        JsonService(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
-    	   std::cout << "******************** Attaching JsonService ********************" << std::endl;
-           bind("read",cppcms::rpc::json_method(&JsonService::read,this),method_role);
+        /**
+         * Get the page chunk size from config.json and bind the functions to the applicaion
+         */
+        ReadingRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
+            pageChunkSizeForwards = settings().get<int>("app.page_chunk_size.forward");
+            pageChunkSizeBackwards = settings().get<int>("app.page_chunk_size.backward");
+            
+            bind("loadInit",cppcms::rpc::json_method(&ReadingRPC::loadInit,this),method_role);
+            bind("loadForwards",cppcms::rpc::json_method(&ReadingRPC::loadForwards,this),method_role);
+            bind("loadBackwards",cppcms::rpc::json_method(&ReadingRPC::loadBackwards,this),method_role);
         }
 
+    private:
         /**
          * Every called book is sent here with an id so that it can be processed to return a book
-         *    1. The book is loaded from the location in the database with the given id
-         *    2. Check to see if the book is reflowable, continue this step if it is
+         *    1. The book is loaded from the location in the database with the given id and start page
+         *          1a) the start page keeps track of the loading progress so that the book can load in chunks
+         * ##       1b) the book is cached so that it is not continuously opened and closed
+         * ## 2. Check to see if the book is reflowable, continue this step if it is
          *          2a) adjust the reflowable book to the user's preferences
          *    3. Create an image with an adress for each page in the book and make it into an html img
-         *          => <img src='FILEPATH' alt='Page: NUMBER' loading='lazy'>
-         *    4. Return the html
+         *          => <img id="page-NUMBER" src='FILEPATH' loading='lazy'>
+         *    4. Return the html with whether or not the book has been full loaded
          */
-        void read(std::string const id) {
-    	    std::cout << "*********************** Building BookImg **********************" << std::endl;
-            std::string returnHTML;
-            std::string file =  settings().get<std::string>("app.media") + "input.pdf"; // file from database
-
-            mupdf::Document doc = mupdf::Document(file.c_str());
-            int pageCount = doc.count_pages(); // check against database and throw error and drop doc if diffrent
-            std::cout << "Page Count: " << pageCount << std::endl;
-
-            mupdf::Matrix myMatrix = mupdf::Matrix();
-            mupdf::Colorspace myColor = mupdf::device_rgb();
+        void loadInit(std::string const &setId) {
+            if (false) { // check id validity
+                return_error("Given id is not valid");
+                return;
+            }
+            id = setId;
             
-            for(int pageNum = 0; pageNum < pageCount; pageNum++) {
-                std::string fileName = id + "-" + std::to_string(pageNum) + ".png";
-                std::string filepath = settings().get<std::string>("app.tmp") + fileName;
+            std::string file =  settings().get<std::string>("app.paths.media") + "input.pdf"; // file from database
+            doc = new mupdf::Document(file.c_str());
+            myMatrix = mupdf::Matrix();
+            myColor = mupdf::device_rgb();
+            pageCount = doc->count_pages(); // check against database and throw error and drop doc if diffrent
                 
-                std::cout << "Filepath: " << filepath << std::endl;
-                
-    		    std::cout << "*********************** Creating Pixmap ***********************" << std::endl;
-                mupdf::Pixmap page = doc.new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0);
-      		    std::cout << "******************* Creating PNG from Pixmap ******************" << std::endl;
-		        page.save_pixmap_as_png(filepath.c_str());
+            std::cout << "Page Count: " << pageCount << std::endl << "FilePath: " << file.c_str() << std::endl;
 
-                returnHTML.append("<img src='/pages/" + fileName + "' alt='Page: " + std::to_string(pageNum) + "' loading='lazy'>");
+            currentPage = 6; // grab from database make sure between zero and last page => if null or last page make 0
+            firstPageLoaded = currentPage;
+            int endPage;
+            if (firstPageLoaded + pageChunkSizeForwards < pageCount) {
+                endPage = firstPageLoaded + pageChunkSizeForwards;
+            } else {
+                endPage = pageCount;
             }
 
-            return_result(returnHTML);
+            std::string returnHTML;
+            for(int pageNum = firstPageLoaded; pageNum < endPage; pageNum++) {
+                std::string fileName = id + "-" + std::to_string(pageNum) + ".png";
+                std::string filepath = settings().get<std::string>("app.paths.tmp") + fileName;
+                std::cout << filepath << std::endl;
+                
+                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
+                    .save_pixmap_as_png(filepath.c_str());
+
+                returnHTML.append(generateImgTag(pageNum, fileName));
+            }
+
+            lastPageLoaded = endPage;
+            
+            cppcms::json::value json;
+            json["html"] = returnHTML;
+            json["firstLoaded"] = firstPageLoaded;
+            json["lastLoaded"] = endPage;
+            json["pageCount"] = pageCount;
+            json["isDoubleView"] = false;
+            json["forwardsChunk"] = pageChunkSizeForwards;
+            json["backwardsChunk"] = pageChunkSizeBackwards;
+            return_result(json);
+        } // loadInit()
+
+        /**
+         * 
+         */
+        void loadForwards(int const &current, int const &start) {
+            if (!doc) {
+                return_error("No document is open");
+                return;
+            }
+            if (current < 0 || current >= pageCount || current > start || start >= pageCount) {
+                return_error("Page range OUT_OF_BOUNDS");
+                return;
+            }
+            if (start != lastPageLoaded) {
+                return_error("Page range missing");
+                return;
+            }
+            currentPage = current;
+            
+            int endPage;
+            if (lastPageLoaded + pageChunkSizeForwards < pageCount) {
+                endPage = lastPageLoaded + pageChunkSizeForwards;
+            } else {
+                endPage = pageCount;
+            }
+            
+            std::string returnHTML;
+            for(int pageNum = lastPageLoaded; pageNum < endPage; pageNum++) {
+                std::string fileName = id + "-" + std::to_string(pageNum) + ".png";
+                std::string filepath = settings().get<std::string>("app.paths.tmp") + fileName;
+                std::cout << filepath << std::endl;
+                
+                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
+                    .save_pixmap_as_png(filepath.c_str());
+
+                returnHTML.append(generateImgTag(pageNum, fileName));
+            }
+            
+            lastPageLoaded = endPage;
+            
+            cppcms::json::value json;
+            json["html"] = returnHTML;
+            json["firstLoaded"] = firstPageLoaded;
+            json["lastLoaded"] = endPage;
+            return_result(json);
+        } // loadForwards()
+
+        /**
+         * 
+         */
+        void loadBackwards(int const &current, int const &start) {
+            if (!doc) {
+                return_error("No document is open");
+                return;
+            }
+            if (current < 0 || current < start) {
+                return_error("Page range OUT_OF_BOUNDS");
+                return;
+            }
+            if (start != firstPageLoaded) {
+                return_error("Page range missing");
+                return;
+            }
+            currentPage = current;
+            
+            int endPage;
+            if (firstPageLoaded - pageChunkSizeBackwards < 0) {
+                endPage = 0;
+            } else {
+                endPage = firstPageLoaded - pageChunkSizeBackwards;
+            }
+            
+            std::string returnHTML;
+            for(int pageNum = endPage; pageNum < firstPageLoaded; pageNum++) {
+                std::string fileName = id + "-" + std::to_string(pageNum) + ".png";
+                std::string filepath = settings().get<std::string>("app.paths.tmp") + fileName;
+                std::cout << filepath << std::endl;
+                
+                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
+                    .save_pixmap_as_png(filepath.c_str());
+
+                returnHTML.append(generateImgTag(pageNum, fileName));
+            }
+
+            firstPageLoaded = endPage;
+
+            cppcms::json::value json;
+            json["html"] = returnHTML;
+            json["firstLoaded"] = endPage;
+            json["lastLoaded"] = lastPageLoaded;
+            return_result(json);
+        } // loadBackwards
+
+        std::string generateImgTag(int const pageNum, std::string const fileName) {
+           return "<img id='page-" + std::to_string(pageNum)+ "' class='myPages' src='/pages/" + fileName + "' loading='lazy'>";
         }
-    };
+    }; // ReadRPC class
+
+    /**
+     * 
+     */
+    class ImportRPC : public cppcms::rpc::json_rpc_server {
+    public:
+        ImportRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
+            bind("getImports",cppcms::rpc::json_method(&ImportRPC::getImports,this),method_role);
+            bind("import",cppcms::rpc::json_method(&ImportRPC::import,this),notification_role);
+        }
+
+    private:
+        /**
+         * Graps the data for the new files to be imported
+         */
+        void getImports() {}
+
+        /**
+         * Takes in information about a file and notifies the system to record the new files' info into the database
+         * and move the file to the media folder with a possible rename
+         * Each call only handles one file at a time
+         * 
+         * oldFileName, newFileName, title, ...etc 
+         */
+        void import() {}
+    }; // ImportRPC class
 
 } // end of namespace services
 
@@ -68,15 +231,12 @@ namespace services {
 class WebSite : public cppcms::application {
 public:
     /**
-     * 
+     * Attaches services, assigns url mapping, and then sets the root of the webpage
      */
     WebSite(cppcms::service &srv) : cppcms::application(srv) {
-    	std::cout << "*********************** Building WebSite **********************" << std::endl;
+        attach(new services::ReadingRPC(srv),"/reading-rpc(/(\\d+)?)?",0);
+        // attach(new service::importRPC(srv),"/import-rpc(/(\\d+)?)?",0);
 
-        // attaches JsonService to the application
-        attach(new services::JsonService(srv), "/rpc(/(\\d+)?)?", 0);
-
-        // assigns the url mapping to the application with the build method
         dispatcher().assign("/",&WebSite::library,this);
         mapper().assign("library","/");
         
@@ -86,8 +246,8 @@ public:
         dispatcher().assign("/collection/(\\w+)",&WebSite::collection,this,1);
         mapper().assign("collection","/collection/{1}");
 
-        dispatcher().assign("/read/(\\w+)",&WebSite::read,this,1);
-        mapper().assign("read","/read/{1}");
+        dispatcher().assign("/read",&WebSite::read,this);
+        mapper().assign("read","/read");
 
         dispatcher().assign("/import",&WebSite::import,this);
         mapper().assign("import","/import");
@@ -107,28 +267,30 @@ public:
         dispatcher().assign("/settings/general",&WebSite::general,this);
         mapper().assign("general","/settings/general");
         
-        dispatcher().assign("/settings/acount-management",&WebSite::account_management,this);
+        dispatcher().assign("/settings/acount-management",&WebSite::accountManagement,this);
         mapper().assign("account_management","/settings/acount-management");
         
-        dispatcher().assign("/settings/media-management",&WebSite::media_management,this);
+        dispatcher().assign("/settings/media-management",&WebSite::mediaManagement,this);
         mapper().assign("media_management","/settings/media-management");
         
         dispatcher().assign("/settings/meintenance",&WebSite::meintenance,this);
         mapper().assign("meintenance","/settings/meintenance");
 
         mapper().root("");
-    }
+    } // WebSite()
 
 private:
     /**
-     * Master view
+     * Sets the sitewide title
      */
     void ini(content::Master &cnt) {
         cnt.title = "Nabu";
     }
 
     /**
-     * Library and reading views 
+     * The following renders the Library and Reading views
+     * 
+     * The Library view is constructed by
      */
     void library() {
         content::Library cnt;
@@ -161,15 +323,14 @@ private:
         // for every item in the collection add to list, volumes should be 2+
         render("collection", cnt);
     }
-    void read(std::string id) {
+    void read() {
         content::Read cnt;
         ini(cnt);
-        cnt.book_id = id;  // id coresponding to a book
         render("read", cnt);
     }
     
     /**
-     * Import, Help, and Login views
+     * The following renders the Import, Help, and Login views
      */
     void import() {
         content::Import cnt;
@@ -188,7 +349,7 @@ private:
     }
 
     /**
-     * Various Settings Views
+     * The following renders the various Settings views
      */
     void user() {
         content::User cnt;
@@ -205,12 +366,12 @@ private:
         ini(cnt);
         render("general", cnt);
     }
-    void account_management() {
+    void accountManagement() {
         content::AccountManagement cnt;
         ini(cnt);
         render("account_management", cnt);
     }
-    void media_management() {
+    void mediaManagement() {
         content::MediaManagement cnt;
         ini(cnt);
         render("media_management", cnt);
@@ -222,7 +383,7 @@ private:
     }
 
     /**
-     * overrides 404 page
+     * Sets the override for the 404 page of the website
      */
     virtual void main(std::string url) {
         if (!dispatcher().dispatch(url)) {
@@ -234,7 +395,7 @@ private:
 };
 
 /**
- * 
+ * Starts and runs the application
  */
 int main(int argc, char ** argv) {
     try {

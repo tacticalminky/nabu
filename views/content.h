@@ -25,30 +25,28 @@ namespace content {
     struct Library : public Master {
         std::vector<Item> media;
     };
-    struct UpNext : public Library { };
+    struct UpNext : public Library {};
     struct Collection : public Library {
         std::vector<Item> books;
         std::string collection_id;
         std::string collection_title;
     };
-    struct Read : public Master {
-        std::string book_id;
-    };
+    struct Read : public Master {};
 
     // Misc views
-    struct Import : public Master { };
-    struct Help : public Master { };
-    struct Login : public Master { };
-    struct PageNotFound : public Master { };
+    struct Import : public Master {};
+    struct Help : public Master {};
+    struct Login : public Master {};
+    struct PageNotFound : public Master {};
     
     // Settings views
-    struct Settings : public Master { };
-    struct User : public Settings { };
-    struct Account : public Settings { };
-    struct General : public Settings { };
-    struct AccountManagement : public Settings { };
-    struct MediaManagement : public Settings { };
-    struct Meintenance : public Settings { };
+    struct Settings : public Master {};
+    struct User : public Settings {};
+    struct Account : public Settings {};
+    struct General : public Settings {};
+    struct AccountManagement : public Settings {};
+    struct MediaManagement : public Settings {};
+    struct Meintenance : public Settings {};
 }
 
 #endif

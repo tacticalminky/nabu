@@ -1,9 +1,15 @@
 {  
     "app" : {
-        "media" : "./testing/media/",
-        "tmp" : "./testing/tmp/pages/",
-        "import" : "",
-        "covers" : "./testing/covers/"
+        "page_chunk_size" : {
+            "forward" : 5,
+            "backward" : 3
+        },
+        "paths" : {
+            "media" : "./testing/media/",
+            "tmp" : "./testing/tmp/pages/",
+            "import" : "",
+            "covers" : "./testing/covers/"
+        }
     },
     "service" : {  
         "api" : "http",  
