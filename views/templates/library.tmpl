@@ -7,43 +7,21 @@
     <% item %>
         <% if item.isCollection %>
         <div class="media-item" id='<%= item.id %>'>
-            <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' onclick=''></a>
+            <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' loading="lazy"></a>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
-            <p><%= item.volumes %></p>
+            <p><%= item.volume %></p>
         </div>
         <% else %>
         <div class="media-item" id='<%= item.id %>'>
-            <a href='<% url "read" %>?id=<%= item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>'></a>
+            <img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' loading="lazy" onclick='openModal();loadInit("<%= item.id %>")'>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
-            <p><%= item.volumes %></p>
+            <p><%= item.volume %></p>
         </div>
         <% end %>
     <% end %>
     <% end %>
-
-    <div class="media-item">
-        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="BookFileName" onclick="openRead();loadInit(0)">
-        <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
-        <h2>The Beginners Guide to Bicycle Commuting</h2>
-    </div>
-    <div class="media-item">
-        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="BookFileName" onclick="">
-        <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
-        <h2>Bash Command Line and Shell Scripts Pocket Primer</h2>
-    </div>
-    <div class="media-item">
-        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="BookFileName" onclick="">
-        <div class="progress"><div class="progress-bar" style="width: 0%;"></div></div>
-        <h2>Transformers Historyia</h2>
-    </div>
-    <div class="media-item">
-        <img class="hover-shadow" src="/covers/vegabond-v01.jpg" alt="Vagabond" onclick="">
-        <div class="progress"><div class="progress-bar" style="width: 83%;"></div></div>
-        <h2>Vegabond</h2>
-        <p>Volume 1</p>
-    </div>
 <% end %>
 
 <% template page_content() %>
@@ -54,7 +32,16 @@
         <a href='<% url "/library" %>'>Library</a>
         <div style="flex-grow: 2.5;"></div>
     </nav>
-    <div class="library-content"><% include library_content() %></div>
+    <div id="library-content" class="library-content"><% include library_content() %></div>
+    <div id="modal" class="modal">
+        <i class="fas fa-times read-nav close" onclick="closeModal()"></i>
+        <div class="modal-content">
+            <i class="fas fa-chevron-left read-nav prev" onclick="flipPage(-1)"></i>
+            <i class="fas fa-chevron-right read-nav next" onclick="flipPage(1)"></i>
+            <div id="pages" class="pages"></div>
+        </div>
+    </div>
+    <script src="/resources/js/readControls.js"></script>
 <% end template %>
 
 <% end view %>

@@ -1,4 +1,4 @@
-var isDoubleView, firstLoaded, lastLoaded, currentPage, pageCount, forwardsChunk, backwardsChunk;
+var isDoubleView, isDoubleViewNow, firstLoaded, lastLoaded, currentPage, pageCount, forwardsChunk, backwardsChunk;
 
 // Takes in the id of a book
 async function loadInit(setId) {
@@ -34,8 +34,9 @@ async function loadInit(setId) {
         currentPage = firstLoaded;
         pageCount = json.result.pageCount;
         isDoubleView = json.result.isDoubleView;
+        isDoubleViewNow = isDoubleView;
         forwardsChunk = json.result.forwardsChunk;
-    backwardsChunk = json.result.backwardsChunk;
+        backwardsChunk = json.result.backwardsChunk;
     } catch(e) {
         console.error(e.message);
     }
@@ -57,6 +58,7 @@ async function loadInit(setId) {
         }
     } while (isStillLoading)
     
+    if (isDoubleView && currentPage % 2 !== 0) { currentPage--; }
     goToCurrentPage();
 } // loadInit()
 
@@ -135,22 +137,32 @@ async function loadBackwards(setParams) {
     }
 } // loadBackwards()
 
-function loadCheck() {
+async function loadCheck() {
     if (firstLoaded > 0 && currentPage < ((isDoubleView) ? backwardsChunk*3 : backwardsChunk*2) + firstLoaded) {
-        loadBackwards([ currentPage, firstLoaded ]);
+        await loadBackwards([ currentPage, firstLoaded ]);
+    } else if (lastLoaded < pageCount && currentPage + ((isDoubleView) ? forwardsChunk*3 : forwardsChunk*2) > lastLoaded) {
+        await loadForwards([ currentPage, lastLoaded ]);
     }
-    if (lastLoaded < pageCount && currentPage + ((isDoubleView) ? forwardsChunk*3 : forwardsChunk*2) > lastLoaded) {
-        loadForwards([ currentPage, lastLoaded ]);
-    }
+}
+
+function openModal() {
+    document.getElementById("modal").style.display = "block";
+}
+
+function closeModal() {
+    document.getElementById("modal").style.display = "none";
 }
 
 // n should be 1 or -1
 function flipPage(n) {
     if (isDoubleView) {
+        if (currentPage % 2 !== 0) { currentPage++; }
+
         if (!(((currentPage + (n * 2)) >= pageCount) && (currentPage + n < pageCount)) || (((currentPage + (n * 2)) < 0) && (currentPage + n >= 0))) {
             n *= 2;
+            isDoubleViewNow = true;
         } else {
-            isDoubleView = false;
+            isDoubleViewNow = false;
         }
     }
     newPage = currentPage + n;
@@ -169,7 +181,7 @@ function goToCurrentPage() {
     }
     console.log("Page: " + currentPage);
     pages[currentPage].style.display = "flex";
-    if (isDoubleView) {
+    if (isDoubleViewNow) {
         pages[currentPage + 1].style.display = "flex";
     }
 }

@@ -5,7 +5,8 @@
             "backward" : 3
         },
         "paths" : {
-            "media" : "./testing/media/",
+            "db" : "./testing/database/test.db",
+            "media" : "./testing",
             "tmp" : "./testing/tmp/pages/",
             "import" : "",
             "covers" : "./testing/covers/"

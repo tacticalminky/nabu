@@ -1,19 +1,18 @@
 #ifndef CONTENT_H
 #define CONTENT_H
-#pragma once
 
 #include <cppcms/view.h>
 
 namespace content {
     // Media Item
     struct Item {
-        std::string title;      // throw error if NULL
-        std::string id;         // throw error if NULL
+        std::string id;
+        std::string title;
+        std::string sortTitle;
         std::string cover;      // set a default value for NULL
-        std::string file;       // throw error if NULL when not a collection
-        std::string volumes;    // can leave NULL
+        std::string volume;    // can leave NULL
         std::string issue;
-        float progress;
+        float progress;         // value or 0
         bool isCollection = false;
     };
     
@@ -31,7 +30,6 @@ namespace content {
         std::string collection_id;
         std::string collection_title;
     };
-    struct Read : public Master {};
 
     // Misc views
     struct Import : public Master {};

@@ -1,10 +1,10 @@
-LIBS = -lcppcms -lbooster -lmupdfcpp
+LIBS = -lcppcms -lbooster -lmupdfcpp -lsqlite3
 SKIN = views/myskin.cpp
 HEADERS = views/content.h
 
 RES = $(SKIN)
 
-_TEMPLATES = master.tmpl library.tmpl upnext.tmpl collection.tmpl read.tmpl import.tmpl help.tmpl login.tmpl page_not_found.tmpl settings.tmpl user.tmpl account.tmpl general.tmpl account_management.tmpl media_management.tmpl meintenance.tmpl
+_TEMPLATES = master.tmpl library.tmpl upnext.tmpl collection.tmpl import.tmpl help.tmpl login.tmpl page_not_found.tmpl settings.tmpl user.tmpl account.tmpl general.tmpl account_management.tmpl media_management.tmpl meintenance.tmpl
 TEMPLATES = $(patsubst %,views/templates/%,$(_TEMPLATES))
 
 all: website
@@ -23,6 +23,12 @@ debug_build: main.cpp $(RES) $(HEADERS) config.json
 
 debug: debug_build
 	valgrind --leak-check=yes ./main.o -c config.json
+
+init_build: initialize.cpp
+	$(CXX) $(CXXFLAGS) -std=c++11 -Wall initialize.cpp -o initialize.o -lsqlite3
+
+init: init_build
+	./initialize.o
 
 clean:
 	rm -fr main.o *.exe $(SKIN) ./testing/tmp/pages/* cppcms_rundir

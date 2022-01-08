@@ -3,7 +3,7 @@
 testing/*
 
 ### Build files ###
-main.o
+*.o
 views/myskin.cpp
 
 ### Various tmp files ###
