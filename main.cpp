@@ -1,6 +1,6 @@
 /**
  * @author  TacticalMinky
- * @version alpha
+ * @version development
  * @date    8 January 2022
  * 
  * This file is everything, I tried the parts of the services namespace to each be in their own file,
@@ -9,7 +9,7 @@
  * try to keep updated. I don't know why I am typing this, it is in a private repo, so no one will see
  * it but whatever.
  *  
- *                                  TABLE OF CONTENTS
+ *                                          TABLE OF CONTENTS
  * page         Name
  *-----------------------------------------------------------------------------------------------------
  *  35      namespace services
