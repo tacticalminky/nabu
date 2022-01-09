@@ -27,8 +27,9 @@ namespace content {
     struct UpNext : public Library {};
     struct Collection : public Library {
         std::vector<Item> books;
-        std::string collection_id;
-        std::string collection_title;
+        std::string collectionId;
+        std::string collectionTitle;
+        std::string collectionCover;
     };
 
     // Misc views

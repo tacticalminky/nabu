@@ -10,7 +10,7 @@
             <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' loading="lazy"></a>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
-            <p><%= item.volume %></p>
+            <p><%= item.volume %> Volumes</p>
         </div>
         <% else %>
         <div class="media-item" id='<%= item.id %>'>
@@ -34,8 +34,8 @@
     </nav>
     <div id="library-content" class="library-content"><% include library_content() %></div>
     <div id="modal" class="modal">
-        <i class="fas fa-times read-nav close" onclick="closeModal()"></i>
         <div class="modal-content">
+            <i class="fas fa-times read-nav close" onclick="closeModal()"></i>
             <i class="fas fa-chevron-left read-nav prev" onclick="flipPage(-1)"></i>
             <i class="fas fa-chevron-right read-nav next" onclick="flipPage(1)"></i>
             <div id="pages" class="pages"></div>

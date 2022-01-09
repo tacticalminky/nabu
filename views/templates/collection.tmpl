@@ -3,7 +3,18 @@
 <% template title() %><%= title %> :: Collection<% end %>
 
 <% template library_content() %>
-    <p>Collection View</p>
+    <img class="collection-cover" src='/covers/<%= collectionCover %>' alt='<%= collectionTitle %>'> 
+    <h2><%= collectionTitle %></h2>
+    <% foreach item in books %>
+    <% item %>
+        <div class="media-item" id='<%= item.id %>'>
+            <img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' loading="lazy" onclick='openModal();loadInit("<%= item.id %>")'>
+            <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
+            <h2><%= item.title %></h2>
+            <p><%= item.volume %></p>
+        </div>
+    <% end %>
+    <% end %>
 <% end %>
 
 <% end view %>
