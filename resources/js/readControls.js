@@ -5,7 +5,7 @@ async function loadInit(setId) {
     data = {
         method: "loadInit",
         params: [ setId ],
-        id: 1
+        id: 11
     }
     
     try {
@@ -67,7 +67,7 @@ async function loadForwards(setParams) {
     data = {
         method: "loadForwards",
         params: setParams,
-        id: 2
+        id: 12
     }
 
     try {
@@ -107,7 +107,7 @@ async function loadBackwards(setParams) {
     data = {
         method: "loadBackwards",
         params: setParams,
-        id: 3
+        id: 13
     }
 
     try {

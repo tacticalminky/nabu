@@ -8,7 +8,7 @@
             "db" : "./testing/database/test.db",
             "media" : "./testing",
             "tmp" : "./testing/tmp/pages/",
-            "import" : "",
+            "import" : "./testing/imports/",
             "covers" : "./testing/covers/"
         }
     },

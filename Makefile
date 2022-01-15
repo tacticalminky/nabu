@@ -10,7 +10,7 @@ TEMPLATES = $(patsubst %,views/templates/%,$(_TEMPLATES))
 all: website
 
 website: main.cpp $(RES) $(HEADERS)
-	$(CXX) $(CXXFLAGS) -std=c++11 -Wall main.cpp $(RES) -o main.o ${LIBS}
+	$(CXX) $(CXXFLAGS) -std=c++17 -Wall main.cpp $(RES) -o main.o ${LIBS}
 
 $(SKIN): ${TEMPLATES}
 	cppcms_tmpl_cc ${TEMPLATES} -o $(SKIN)
@@ -19,13 +19,13 @@ run: website config.json
 	./main.o -c config.json
 
 debug_build: main.cpp $(RES) $(HEADERS) config.json
-	$(CXX) $(CXXFLAGS) -std=c++11 -g -O0 -Wall main.cpp $(RES) -o main.o ${LIBS}
+	$(CXX) $(CXXFLAGS) -std=c++17 -g -O0 -Wall main.cpp $(RES) -o main.o ${LIBS}
 
 debug: debug_build
 	valgrind --leak-check=yes ./main.o -c config.json
 
 init_build: initialize.cpp
-	$(CXX) $(CXXFLAGS) -std=c++11 -Wall initialize.cpp -o initialize.o -lsqlite3
+	$(CXX) $(CXXFLAGS) -std=c++17 -Wall initialize.cpp -o initialize.o -lsqlite3
 
 init: init_build
 	./initialize.o

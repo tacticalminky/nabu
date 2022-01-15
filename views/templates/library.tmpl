@@ -7,17 +7,17 @@
     <% item %>
         <% if item.isCollection %>
         <div class="media-item" id='<%= item.id %>'>
-            <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' loading="lazy"></a>
+            <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/vagabond-v01.jpg' alt='<%= item.title %>' loading="lazy"></a>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
             <p><%= item.volume %> Volumes</p>
         </div>
         <% else %>
         <div class="media-item" id='<%= item.id %>'>
-            <img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' loading="lazy" onclick='openModal();loadInit("<%= item.id %>")'>
+            <img class="hover-shadow" src='/covers/vagabond-v01.jpg' alt='<%= item.title %>' loading="lazy" onclick='openModal();loadInit("<%= item.id %>")'>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
-            <p><%= item.volume %></p>
+            <% if not empty item.volume %><p>Volume <%= item.volume %></p><% end %>
         </div>
         <% end %>
     <% end %>

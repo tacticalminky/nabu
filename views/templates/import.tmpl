@@ -4,6 +4,69 @@
 
 <% template page_content() %>
     <h2>Imports</h2>
+    <div class="import-content">
+    <% foreach item in imports %>
+    <% item %>
+        <form>
+            <div>
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="tilte" value='<%= item.title %>' required>
+            </div>
+            <div>
+                <label for="sort-title">Sort Title:</label>
+                <input type="text" id="sort-title" name="sort-tilte" value='<%= item.sortTitle %>' required>
+            </div>
+            <div>
+                <label for="vnum">Volume Number:</label>
+                <input type="number" id="vnum" name="vnum" <% if (item.volNum != 0) %>value='<%= item.volNum %>'<% end %> min="0">
+            </div>
+            <div>
+                <label for="inum">Issue Number:</label>
+                <input type="number" id="inum" name="inum" <% if (item.issNum != 0) %>value='<%= item.issNum %>'<% end %> min="0">
+            </div>
+            <div>
+                <label for="isbn">ISBN:</label>
+                <input type="text" id="isbn" name="isbn" value='<%= item.isbn %>'>
+            </div>
+            <div>
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" value='<%= item.date %>'>
+            </div>
+            <div>
+                <label for="author">Author:</label>
+                <input type="text" id="author" name="author" value='<%= item.author %>'>
+            </div>
+            <div>
+                <label for="illistrator">Illistrator:</label>
+                <input type="text" id="illistrator" name="illistrator" value='<%= item.illistrator %>'>
+            </div>
+            <div>
+                <label for="publisher">Publisher:</label>
+                <input type="text" id="publisher" name="publisher" value='<%= item.publisher %>'>
+            </div>
+            <div>
+                <label for="genere">Generes:</label>
+                <input type="text" id="genere" name="genere" value='<%= item.generes %>'>
+            </div>
+            <div>
+                <label for="type">Type:</label>
+                <select name="type" id="type" required>
+                    <option value="book">Book</option>
+                    <option value="comic">Comic</option>
+                    <option value="manga">Manga</option>
+                </select>
+            </div>
+            <div>
+                <label for="collection">Collection:</label>
+                <input type="text" id="collection" name="collection">
+            </div>
+            <input type="hidden" id="file" value='<%= item.file %>'>
+            <input type="submit" value="Input">
+        </form>
+    <% end %>
+    <% end %>
+    </div>
+    <script src="/resources/js/import.js"></script>
 <% end template %>
 
 <% end view %>

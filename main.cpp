@@ -12,13 +12,13 @@
  *                                          TABLE OF CONTENTS
  * page         Name
  *-----------------------------------------------------------------------------------------------------
- *  35      namespace services
- *  41          namespace database
- *  254         class ReadingRPC
- *  453         class ImportRPC
- *  479         class SettingsRPC
- *  491     class WebSite
- *  673     main()
+ *  39      namespace services
+ *  45          namespace database
+ *  413         class ReadingRPC
+ *  614         class DataRPC
+ *  642         class SettingsRPC
+ *  655     class WebSite
+ *  849     main()
  */
 
 #include <cppcms/application.h>
@@ -30,7 +30,11 @@
 #include <mupdf/classes.h>
 #include <sqlite3.h>
 
+#include <filesystem>
+
 #include "views/content.h"
+
+namespace fs = std::filesystem;
 
 namespace services {
     std::vector<content::Item> glb_media;
@@ -42,6 +46,7 @@ namespace services {
         sqlite3 *db;
         char *zErrMsg = 0;
         std::string docFilePath;
+        std::string transferID;
 
         /**
          * callback() is a generic callback for sql commands that does nothing.
@@ -57,6 +62,19 @@ namespace services {
         } // callback()
         
         /**
+         * idCallback() makes the data argument the id
+         * 
+         * @param argv 0->id for anything 
+         */
+        static int idCallback(void* data, int argc, char **argv, char **azColName) {
+            if (argc != 1) {
+                throw std::invalid_argument("Database query should contain 1 argument, but has: " + argc);
+            }
+            transferID = std::string(argv[0]);
+            return 0;
+        } // idCallback()
+
+        /**
          * mediaCallback() creates a content::Item for each entry returned by the sql requests and then
          * populates glb_media with the Item
          * 
@@ -70,7 +88,6 @@ namespace services {
             item.id             = std::string(argv[0]);
             item.title          = std::string(argv[1]);
             item.sortTitle      = std::string(argv[2]);
-            item.cover          = "vagabond-v01.jpg"; // -> id.png
             item.volume         = ((argv[3]) ? std::string(argv[3]) : "" );
             item.issue          = ((argv[4]) ? std::string(argv[4]) : "" );
             item.progress       = 0; // get progress or 0
@@ -94,9 +111,8 @@ namespace services {
             item.id             = std::string(argv[0]);
             item.title          = std::string(argv[1]);
             item.sortTitle      = std::string(argv[2]);
-            item.cover          = "vagabond-v01.jpg"; // -> id.png
             item.volume         = ((argv[3]) ? std::string(argv[3]) : "" );
-            item.issue          = std::string(argv[4]);
+            item.issue          = ((argv[4]) ? std::string(argv[4]) : "" );
             item.progress       = 0; // get progress or 0
             item.isCollection   = true;
 
@@ -164,7 +180,7 @@ namespace services {
          * 
          * @param filepath the full file path, including the name, to the database file
          */
-        void open(std::string filepath) {
+        void open(std::string const filepath) {
             if (db) {
                 sqlite3_close(db);
             }
@@ -205,11 +221,11 @@ namespace services {
          * 
          * @param id the id of the collection where the requested books belong
          */
-        void getCollectionMedia(std::string id) {
+        void getCollectionMedia(std::string const id) {
             std::cout << "Getting books in the collection" << std::endl;
             glb_media.clear();
             std::string sql;
-            sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id=" + id + ";";
+            sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id=" + id + " ORDER BY media.issue_num DESC;";
             int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
@@ -223,10 +239,10 @@ namespace services {
          * @param media_id the id of the book whose file path is wanted
          * @return the finilaized docFilePath
          */
-        std::string fetchFile(std::string media_id) {
+        std::string fetchFile(std::string const media_id) {
             std::cout << "Getting the file for the book" << std::endl;
             docFilePath = "/";
-            std:: string sql;
+            std::string sql;
             sql = "SELECT media.file_loc, media.filename FROM media WHERE media_id=" + media_id + ";";
             int res = sqlite3_exec(db, sql.c_str(), fetchFileCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
@@ -237,13 +253,156 @@ namespace services {
         }
 
         /**
+         * getDirectoryID() grabs the id for a given directory
+         * 
+         * @param name the name of the directory
+         */
+        std::string getDirectoryID(std::string const name) {
+            std::cout << "Getting directory_id for " << name << std::endl;
+
+            std::string sql;
+            sql = "SELECT directories.directory_id FROM directories WHERE name='" + name + "';";
+            int res = sqlite3_exec(db, sql.c_str(), idCallback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+            
+            return transferID;
+        } // getDirectoryID()
+
+        /**
+         * getCollectionID() checks the database for if the collection with the given name exists, if
+         * it does not exist the collection is created and the id is returned. If the collection does
+         * exits, the id is grabbed
+         * 
+         * @param name the name of the collection
+         */
+        std::string getCollectionID(std::string const name) {
+            std::cout << "Getting collection_id for " << name << std::endl;
+
+            std::string sql;
+            struct sqlite3_stmt *selectstmt;
+            sql = "SELECT * FROM collections WHERE title='" + name + "';";
+            int res = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
+            if (res != SQLITE_OK) {
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+            if (sqlite3_step(selectstmt) != SQLITE_ROW) {
+                std::cout << "Making collection for " << name << std::endl;
+                // handle leading the for sort_title
+                std::hash<std::string> str_hash;
+                int hashVal = str_hash(name);
+                sql = "INSERT INTO collections (collection_id, title, sort_title)" \
+                    "VALUES (" + std::to_string(hashVal) + ", '" + name + "', '" + name + "');";
+                res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+                if (res != SQLITE_OK) {
+                    throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+                }
+                return std::to_string(hashVal);
+            }
+            sqlite3_finalize(selectstmt);
+            
+            sql = "SELECT collections.collection_id FROM collections WHERE title='" + name + "';";
+            res = sqlite3_exec(db, sql.c_str(), idCallback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+
+            return transferID;
+        } // getCollectionID()
+
+        /**
+         * import() takes in the info for a book to be added to the database, gets a page count form the book,
+         * generates a new filename, builds the new path to the file, moves the file, and then adds the book to
+         * the database.
+         * 
+         * TODO
+         *  # make cover
+         * 
+         * @param json contains the information about the book in json format
+         * @param importPath path to /imports, including from config.json
+         * @param mediaPath path to /media, not including from config.json
+         */
+        void import(cppcms::json::value json, std::string const importPath, std::string const mediaPath) {
+            std::cout << "Importing a book to the database" << std::endl;
+
+            // open document, get page count and make cover 
+            fs::path oldFilePath(importPath + json.get<std::string>("file")); // fix for recursive files
+            if (!fs::exists(oldFilePath)) {
+                throw std::runtime_error("Can't find file: " + oldFilePath.string());
+            }
+
+            mupdf::Document *doc = new mupdf::Document(oldFilePath.c_str());
+            int totalPages = doc->count_pages();
+            
+            // build the new filename from the title and volume or issue of the book, keeping the same extension
+            std::string newFilename = json.get<std::string>("title");
+            if (!json.get<std::string>("volNum").empty()) {
+                newFilename.append(" - vol" + json.get<std::string>("volNum"));
+            } else if (!json.get<std::string>("issNum").empty()) {
+                newFilename.append(" - iss" + json.get<std::string>("issNum"));
+            }
+            // make cover image with newFilename
+            newFilename.append(oldFilePath.extension());
+
+            // create the new directories and add to the database 
+            fs::path newDirPathRelativeToMedia("media/" + json.get<std::string>("title")); // relative to /media
+            fs::path newPath(mediaPath);
+            fs::path prevPart;
+            for (const auto& part : newDirPathRelativeToMedia) {
+                newPath.append(part.c_str());
+                std::cout << newPath.c_str() << std::endl;
+                if (fs::create_directory(newPath)) {
+                    // directory was created -> add to database
+                    std::string sqlTMP;
+                    sqlTMP = "INSERT INTO directories (parent_id, name)" \
+                        "VALUES (" + getDirectoryID(prevPart.c_str()) + ",'" + part.c_str() + "');";
+                    int resTMP = sqlite3_exec(db, sqlTMP.c_str(), callback, 0, &zErrMsg);
+                    if (resTMP != SQLITE_OK ) {
+                        throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+                    }
+                }
+                prevPart = part;
+            }
+            newPath.append(newFilename);
+            std::cout << "Moving: " << newFilename << std::endl;
+            fs::rename(oldFilePath, newPath);
+
+            // Insert the book into the media database with all the new infomation
+            std::cout << "Adding to database" << std::endl;
+            std::string sql;
+            sql = "INSERT INTO media (title, sort_title, volume_num, issue_num, isbn, total_pages, date, author, illistrator, publisher, genere, type, collection_id, filename, file_loc)" \
+                "VALUES ('"
+                    + json.get<std::string>("title") + "','"
+                    + json.get<std::string>("sortTitle") + "',"
+                    + ((json.get<std::string>("volNum").empty()) ? "NULL" : "'" + json.get<std::string>("volNum") + "'" ) + ","
+                    + ((json.get<std::string>("issNum").empty()) ? "NULL" : "'" + json.get<std::string>("issNum") + "'" ) + ","
+                    + ((json.get<std::string>("isbn").empty()) ? "NULL" : "'" + json.get<std::string>("isbn") + "'" ) + ","
+                    + std::to_string(totalPages) + ","
+                    + ((json.get<std::string>("date").empty()) ? "NULL" : "'" + json.get<std::string>("date") + "'" ) + ","
+                    + ((json.get<std::string>("author").empty()) ? "NULL" : "'" + json.get<std::string>("author") + "'" ) + ","
+                    + ((json.get<std::string>("illistrator").empty()) ? "NULL" : "'" + json.get<std::string>("illistrator") + "'" ) + ","
+                    + ((json.get<std::string>("publisher").empty()) ? "NULL" : "'" + json.get<std::string>("publisher") + "'" ) + ","
+                    + ((json.get<std::string>("genere").empty()) ? "NULL" : "'" + json.get<std::string>("genere") + "'" ) + ",'"
+                    + json.get<std::string>("type") + "',"
+                    + ((json.get<std::string>("collection").empty()) ? "NULL" : getCollectionID(json.get<std::string>("collection")) ) + ",'"
+                    + newFilename + "','"
+                    + getDirectoryID(newPath.parent_path().filename()) +
+                "');";
+            int res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+        } // import()
+
+        /**
          * close() closes the database
          */
         void close() {
             sqlite3_close(db);
             std::cout << "Closed database" << std::endl;
         } // close()
-    }; // inline database namespace
+    }; // namespace database
 
     /**
      * ReadingRPC handles all of the calls related to viewing a book. 
@@ -265,9 +424,11 @@ namespace services {
          * Get the page chunk size from config.json and bind the functions to the applicaion
          */
         ReadingRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
+            std::cout << "Setting pageChunkSize" << std::endl;
             pageChunkSizeForwards = settings().get<int>("app.page_chunk_size.forward");
             pageChunkSizeBackwards = settings().get<int>("app.page_chunk_size.backward");
             
+            std::cout << "Binding reading controls" << std::endl;
             bind("loadInit",cppcms::rpc::json_method(&ReadingRPC::loadInit,this),method_role);
             bind("loadForwards",cppcms::rpc::json_method(&ReadingRPC::loadForwards,this),method_role);
             bind("loadBackwards",cppcms::rpc::json_method(&ReadingRPC::loadBackwards,this),method_role);
@@ -448,29 +609,31 @@ namespace services {
     }; // ReadRPC class
 
     /**
-     * 
+     * ImportRPC handles all the call related to importing books
      */
-    class ImportRPC : public cppcms::rpc::json_rpc_server {
+    class DataRPC : public cppcms::rpc::json_rpc_server {
     public:
-        ImportRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
-            bind("getImports",cppcms::rpc::json_method(&ImportRPC::getImports,this),method_role);
-            bind("import",cppcms::rpc::json_method(&ImportRPC::import,this),notification_role);
+        DataRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
+            std::cout << "Binding data controls" << std::endl;
+            bind("import",cppcms::rpc::json_method(&DataRPC::import,this),method_role);
         }
 
     private:
         /**
-         * Graps the data for the new files to be imported
+         * import() 
          */
-        void getImports() {}
-
-        /**
-         * Takes in information about a file and notifies the system to record the new files' info into the database
-         * and move the file to the media folder with a possible rename
-         * Each call only handles one file at a time
-         * 
-         * oldFileName, newFileName, title, ...etc 
-         */
-        void import() {}
+        void import(cppcms::json::value json) {
+            std::cout << "import() called" << std::endl;
+            json.save(std::cout,cppcms::json::readable); // prints json
+            try {
+                database::import(json, settings().get<std::string>("app.paths.import"), settings().get<std::string>("app.paths.media"));
+                return_result("Successfully added to the database");
+            } catch (std::exception const &e) {
+                std::cout << e.what() << std::endl;
+                return_error("Error: " + std::string(e.what()));
+                return;
+            }
+        } // import()
     }; // ImportRPC class
     
     /**
@@ -486,7 +649,8 @@ namespace services {
 } // namespace services
 
 /**
- * 
+ * WebSite is the main application that the other applications attach to and run from. WebSite handles
+ * the construction of the website and url dispatching.
  */
 class WebSite : public cppcms::application {
 public:
@@ -497,8 +661,8 @@ public:
         services::database::open(settings().get<std::string>("app.paths.db"));
         
         attach(new services::ReadingRPC(srv),"/reading-rpc(/(\\d+)?)?",0);
-        // attach(new service::ImportRPC(srv),"/import-rpc(/(\\d+)?)?",0);
-        // attach(new service::SettingsRPC(srv),"/settings-rpc(/(\\d+)?)?",0);
+        attach(new services::DataRPC(srv),"/data-rpc(/(\\d+)?)?",0);
+        // attach(new services::SettingsRPC(srv),"/settings-rpc(/(\\d+)?)?",0);
 
         dispatcher().assign("/",&WebSite::library,this);
         mapper().assign("library","/");
@@ -583,36 +747,45 @@ private:
     void collection(std::string id) {
         content::Collection cnt;
         ini(cnt);
-        cnt.collectionId = id;
         for (content::Item item : services::glb_media) {
             if (id == item.id) {
                 cnt.collectionTitle = item.title;
-                cnt.collectionCover = item.cover;
                 break;
             }
         }
         services::database::getCollectionMedia(id);
         cnt.books = services::glb_media;
-        std::stable_sort(cnt.books.begin(), cnt.books.end(), [](content::Item c1, content::Item c2) {
-            std::stringstream c1_num(c1.volume);
-            int n1 = 0;
-            c1_num >> n1;
-            std::stringstream c2_num(c2.volume);
-            int n2 = 0;
-            c2_num >> n2;
-            return n1 - n2;
-        });
         render("collection", cnt);
     }
     
     /**
-     * The following render the Import, Help, and Login views respectively
+     * import() builds the import view from files in the import directory
      */
     void import() {
         content::Import cnt;
         ini(cnt);
+        std::cout << "Building import view" << std::endl;
+        for (const auto& entry : fs::recursive_directory_iterator(settings().get<std::string>("app.paths.import"))) {
+            if (entry.is_directory()) {
+                continue;
+            }
+
+            fs::path file = entry.path();
+            content::ImportItem item;
+            item.file = file.filename();
+            // break up entry.stem() -> full title, sort title, volume/issue number
+            item.title = file.stem();
+            item.sortTitle = file.stem(); // handle a beginning the
+            // api for other data
+            // extension for type ?
+            cnt.imports.push_back(item);
+        }
         render("import", cnt);
     }
+
+    /**
+     * The following render the Help and Login pages
+     */
     void help() {
         content::Help cnt;
         ini(cnt);

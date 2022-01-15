@@ -133,37 +133,6 @@ body {
     margin: 0;
 }
 
-/* || SETTINGS NAV */
-.settings-nav {
-    display: flex;
-    z-index: 2;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 2rem;
-    background-color: grey;
-}
-.settings-nav a {
-    text-align: center;
-    text-decoration: none;
-    font-size: 1.2rem;
-    padding: .125rem .5rem; 
-}
-.settings-nav a:hover {
-    background-color: coral;
-}
-
-/* || SETTINGS CONTENT */
-.settings-content h2 {
-    font-size: 1.6rem;
-}
-.settings-content h3 {
-    font-size: 1.25rem;
-}
-.settings-content p {
-    font-size: 1rem;
-}
-
 /* || READING MODAL */
 .modal {
     display: none;
@@ -237,6 +206,49 @@ body {
     max-height: 100%;
     max-width: 100%;
     width: auto;
+}
+
+/* || SETTINGS NAV */
+.settings-nav {
+    display: flex;
+    z-index: 2;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 2rem;
+    background-color: grey;
+}
+.settings-nav a {
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.2rem;
+    padding: .125rem .5rem; 
+}
+.settings-nav a:hover {
+    background-color: coral;
+}
+
+/* || SETTINGS CONTENT */
+.settings-content h2 {
+    font-size: 1.6rem;
+}
+.settings-content h3 {
+    font-size: 1.25rem;
+}
+.settings-content p {
+    font-size: 1rem;
+}
+
+/* || IMPORTS */
+.import-content {
+    display: block;
+}
+.import-content form {
+    display: inline;
+}
+.import-content input, .import-content select {
+    display: inline;
+    background-color: rgba(128, 128, 128, 0.65);
 }
 
 /* || MOBILE DIVICES */
