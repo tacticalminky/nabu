@@ -5,11 +5,11 @@
             "backward" : 3
         },
         "paths" : {
-            "db" : "./testing/database/test.db",
-            "media" : "./testing",
-            "tmp" : "./testing/tmp/pages/",
-            "import" : "./testing/imports/",
-            "covers" : "./testing/covers/"
+            "db" : "",
+            "media" : "",
+            "tmp" : "",
+            "import" : "",
+            "covers" : ""
         }
     },
     "service" : {  
@@ -30,8 +30,8 @@
         "listing" : true,
         "document_root" : "./resources",
         "alias" : [
-            { "url" : "/covers", "path" : "./testing/covers/" },
-            { "url" : "/pages", "path" : "./testing/tmp/pages/" }
+            { "url" : "/covers", "path" : "" },
+            { "url" : "/pages", "path" : "" }
         ]
     } 
 }

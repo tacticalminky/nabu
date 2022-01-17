@@ -47,6 +47,22 @@ namespace services {
         char *zErrMsg = 0;
         std::string docFilePath;
         std::string transferID;
+        
+        /**
+         * Opens the database with the given filepath
+         * 
+         * @param filepath the full file path, including the name, to the database file
+         */
+        void open(std::string const filepath) {
+            if (db) {
+                sqlite3_close(db);
+            }
+            int res = sqlite3_open(filepath.c_str(), &db);
+            if (res) {
+                throw std::invalid_argument("Database failed to open: " + std::string(sqlite3_errmsg(db)));
+            }
+            std::cout << "Database opened" << std::endl;
+        } // open()
 
         /**
          * callback() is a generic callback for sql commands that does nothing.
@@ -174,22 +190,6 @@ namespace services {
             std::cout << docFilePath << std::endl;
             return 0;
         } // fetchFileCallback()
-        
-        /**
-         * Opens the database with the given filepath
-         * 
-         * @param filepath the full file path, including the name, to the database file
-         */
-        void open(std::string const filepath) {
-            if (db) {
-                sqlite3_close(db);
-            }
-            int res = sqlite3_open(filepath.c_str(), &db);
-            if (res) {
-                throw std::invalid_argument("Database failed to open: " + std::string(sqlite3_errmsg(db)));
-            }
-            std::cout << "Database opened" << std::endl;
-        } // open()
 
         /**
          * getMedia() clears glb_media before making a sql request for media that don't belong to a collection
@@ -475,14 +475,16 @@ namespace services {
 
             std::string returnHTML;
             for(int pageNum = firstPageLoaded; pageNum < endPage; pageNum++) {
-                std::string fileName = id + "-" + std::to_string(pageNum) + ".png";
-                std::string filepath = settings().get<std::string>("app.paths.tmp") + fileName;
-                std::cout << filepath << std::endl;
+                std::string filename = id + "-" + std::to_string(pageNum) + ".png";
+                fs::path image(settings().get<std::string>("app.paths.tmp") + filename);
+                std::cout << image.c_str() << std::endl;
                 
-                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                    .save_pixmap_as_png(filepath.c_str());
+                if(!fs::exists(image)) {
+                    doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
+                        .save_pixmap_as_png(image.c_str());
+                }
 
-                returnHTML.append(generateImgTag(fileName));
+                returnHTML.append(generateImgTag(filename));
             }
 
             lastPageLoaded = endPage;
@@ -529,14 +531,16 @@ namespace services {
             
             std::string returnHTML;
             for(int pageNum = lastPageLoaded; pageNum < endPage; pageNum++) {
-                std::string fileName = id + "-" + std::to_string(pageNum) + ".png";
-                std::string filepath = settings().get<std::string>("app.paths.tmp") + fileName;
-                std::cout << filepath << std::endl;
+                std::string filename = id + "-" + std::to_string(pageNum) + ".png";
+                fs::path image(settings().get<std::string>("app.paths.tmp") + filename);
+                std::cout << image.c_str() << std::endl;
                 
-                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                    .save_pixmap_as_png(filepath.c_str());
+                if(!fs::exists(image)) {
+                    doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
+                        .save_pixmap_as_png(image.c_str());
+                }
 
-                returnHTML.append(generateImgTag(fileName));
+                returnHTML.append(generateImgTag(filename));
             }
             
             lastPageLoaded = endPage;
@@ -579,14 +583,16 @@ namespace services {
             
             std::string returnHTML;
             for(int pageNum = endPage; pageNum < firstPageLoaded; pageNum++) {
-                std::string fileName = id + "-" + std::to_string(pageNum) + ".png";
-                std::string filepath = settings().get<std::string>("app.paths.tmp") + fileName;
-                std::cout << filepath << std::endl;
+                std::string filename = id + "-" + std::to_string(pageNum) + ".png";
+                fs::path image(settings().get<std::string>("app.paths.tmp") + filename);
+                std::cout << image.c_str() << std::endl;
                 
-                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                    .save_pixmap_as_png(filepath.c_str());
-
-                returnHTML.append(generateImgTag(fileName));
+                if(!fs::exists(image)) {
+                    doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
+                        .save_pixmap_as_png(image.c_str());
+                }
+                
+                returnHTML.append(generateImgTag(filename));
             }
 
             firstPageLoaded = endPage;
@@ -746,7 +752,8 @@ private:
      */
     void collection(std::string id) {
         content::Collection cnt;
-        ini(cnt);
+        ini(cnt); 
+        // adjust what is being searched -> refresh removes the name
         for (content::Item item : services::glb_media) {
             if (id == item.id) {
                 cnt.collectionTitle = item.title;
@@ -764,8 +771,8 @@ private:
     void import() {
         content::Import cnt;
         ini(cnt);
-        std::cout << "Building import view" << std::endl;
-        for (const auto& entry : fs::recursive_directory_iterator(settings().get<std::string>("app.paths.import"))) {
+        std::cout << "Building import view" << std::endl; // make recursive_directory_iterator when I can handle it
+        for (const auto& entry : fs::directory_iterator(settings().get<std::string>("app.paths.import"))) {
             if (entry.is_directory()) {
                 continue;
             }

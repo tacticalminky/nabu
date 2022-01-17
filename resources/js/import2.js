@@ -95,97 +95,95 @@ async function matchGoogleAPI(isbn, title, author, publisher, form) {
                         </tr>
                         <tr class="source">
                             <td><a href="${match.volumeInfo.canonicalVolumeLink}" target="_blank">Source</a><td>
-                            <td><button type="button" id="${match.id}" onclick="match(${form},${match})">Select Match</button></td>
+                            <td><button type="button" id="${match.id}">Select Match</button></td>
                         </tr>
                     </table>
                 </div>
             `;
-            // document.getElementById(match.id).addEventListener("click", function() { match(form,match); });
+            document.getElementById(match.id).addEventListener("click", function() {
+                // newValue for all
+                // newValue for new -> currently null
+                document.getElementById("api-modal").innerHTML = `
+                    <div class="match">
+                        <table>
+                            <tr>
+                                <th class="hrow">Group</th>
+                                <th class="hrow">Current</th>
+                                <th class="hrow">New</th>
+                            </tr>
+                            <tr>
+                                <th>Title:</th>
+                                <td>${form.elements['title'].value}</td>
+                                <td>${match.volumeInfo.title}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['title']},${match.volumeInfo.title})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>ISBN:</th>
+                                <td>${form.elements['isbn'].value}</td>
+                                <td>${((match.volumeInfo.industryIdentifiers) ? match.volumeInfo.industryIdentifiers[0].identifier : "" )}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['isbn']},${match.volumeInfo.industryIdentifiers[0].identifier})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>Date:</th>
+                                <td>${form.elements['date'].value}</td>
+                                <td>${match.volumeInfo.publishedDate}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['date']},${match.volumeInfo.publishedDate})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>Author:</th>
+                                <td>${form.elements['author'].value}</td>
+                                <td>${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['author']},${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>Illistrator:</th>
+                                <td>${form.elements['illistrator'].value}</td>
+                                <td></td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['illistrator']}, null)">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>Publisher:</th>
+                                <td>${form.elements['publisher'].value}</td>
+                                <td>${match.volumeInfo.publisher}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['publisher']},${match.volumeInfo.publisher})">Grab New</button></td>
+                            </tr>
+                            <tr> 
+                                <th>Generes:</th>
+                                <td>${form.elements['genere'].value}</td>
+                                <td>${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['genere']},${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>Collection:</th>
+                                <td>${form.elements['collection'].value}</td>
+                                <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['collection']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>Volume:</th>
+                                <td>${form.elements['vnum'].value}</td>
+                                <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['vnum']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <th>Issue:</th>
+                                <td>${form.elements['inum'].value}</td>
+                                <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
+                                <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['inum']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )})">Grab New</button></td>
+                            </tr>
+                            <tr>
+                                <td colspan="2"><button type="button" onclick="closeAPIModal()">Exit</button></td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
+            });
         }
         // fetch more
     } catch(e) {
         console.error(e.message);
     }
 } // searchGoogleAPI()
-
-function match(form, match) {
-    // newValue for all
-    // newValue for new -> currently null
-    document.getElementById("api-modal").innerHTML = `
-        <div class="match">
-            <table>
-                <tr>
-                    <th class="hrow">Group</th>
-                    <th class="hrow">Current</th>
-                    <th class="hrow">New</th>
-                </tr>
-                <tr>
-                    <th>Title:</th>
-                    <td>${form.elements['title'].value}</td>
-                    <td>${match.volumeInfo.title}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['title']},${match.volumeInfo.title})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>ISBN:</th>
-                    <td>${form.elements['isbn'].value}</td>
-                    <td>${((match.volumeInfo.industryIdentifiers) ? match.volumeInfo.industryIdentifiers[0].identifier : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['isbn']},${match.volumeInfo.industryIdentifiers[0].identifier})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>Date:</th>
-                    <td>${form.elements['date'].value}</td>
-                    <td>${match.volumeInfo.publishedDate}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['date']},${match.volumeInfo.publishedDate})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>Author:</th>
-                    <td>${form.elements['author'].value}</td>
-                    <td>${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['author']},${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>Illistrator:</th>
-                    <td>${form.elements['illistrator'].value}</td>
-                    <td></td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['illistrator']}, null)">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>Publisher:</th>
-                    <td>${form.elements['publisher'].value}</td>
-                    <td>${match.volumeInfo.publisher}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['publisher']},${match.volumeInfo.publisher})">Grab New</button></td>
-                </tr>
-                <tr> 
-                    <th>Generes:</th>
-                    <td>${form.elements['genere'].value}</td>
-                    <td>${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['genere']},${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>Collection:</th>
-                    <td>${form.elements['collection'].value}</td>
-                    <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['collection']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>Volume:</th>
-                    <td>${form.elements['vnum'].value}</td>
-                    <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['vnum']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <th>Issue:</th>
-                    <td>${form.elements['inum'].value}</td>
-                    <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['inum']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )})">Grab New</button></td>
-                </tr>
-                <tr>
-                    <td colspan="2"><button type="button" onclick="closeAPIModal()">Exit</button></td>
-                </tr>
-            </table>
-        </div>
-    `;
-} // match()
 
 function newValue(formElement, val) {
     formElement.value = val;

@@ -1,6 +1,6 @@
 var isDoubleView, isDoubleViewNow, firstLoaded, lastLoaded, currentPage, pageCount, forwardsChunk, backwardsChunk;
 
-// Takes in the id of a book
+// takes in the id of a book and sends it to the server to build the pages of the book
 async function loadInit(setId) {
     data = {
         method: "loadInit",
@@ -146,11 +146,12 @@ async function loadCheck() {
 }
 
 function openModal() {
-    document.getElementById("modal").style.display = "block";
+    document.getElementById("modal").style.visibility = "visible";
 }
 
 function closeModal() {
-    document.getElementById("modal").style.display = "none";
+    document.getElementById("modal").style.visibility = "hidden";
+    document.getElementById("pages").innerHTML = "";
 }
 
 // n should be 1 or -1
