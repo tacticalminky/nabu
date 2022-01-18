@@ -60,65 +60,69 @@ async function matchGoogleAPI(isbn, title, author, publisher, form) {
         let json = await response.json();
         console.log(json);
 
-        document.getElementById("api-modal").innerHTML = "";
-        document.getElementById("api-modal").style.visibility = "visible";
-        for (const match of json.items) {
-            // change to grab all authors and catagories
-            document.getElementById("api-modal").innerHTML += `
-                <div class="potential-match">
-                    <img src="${((match.volumeInfo.imageLinks) ? match.volumeInfo.imageLinks.smallThumbnail : "" )}" alt="Cover Preview">
-                    <table>
-                        <tr>
-                            <th colspan="2" class="title">${match.volumeInfo.title}</th>
-                        </tr>
-                        <tr>
-                            <th>ISBN:</th>
-                            <td>${((match.volumeInfo.industryIdentifiers) ? match.volumeInfo.industryIdentifiers[0].identifier : "" )}</td>
-                        </tr>
-                        <tr>
-                            <th>Date:</th>
-                            <td>${match.volumeInfo.publishedDate}</td>
-                        </tr>
-                        <tr>
-                            <th>Author:</th>
-                            <td>${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )}</td>
-                        </tr>
-                        <tr>
-                            <th>Illistrator:</th>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <th>Publisher:</th>
-                            <td>${match.volumeInfo.publisher}</td>
-                        </tr>
-                        <tr> 
-                            <th>Generes:</th>
-                            <td>${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )}</td>
-                        </tr>
-                        <tr>
-                            <th>Collection:</th>
-                            <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )}</td>
-                        </tr>
-                        <tr>
-                            <th>Volume:</th>
-                            <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
-                        </tr>
-                        <tr class="source">
-                            <td><a href="${match.volumeInfo.canonicalVolumeLink}" target="_blank">Source</a><td>
-                            <td><button type="button" id="${match.id}">Select Match</button></td>
-                        </tr>
-                    </table>
-                </div>
-            `;
-            document.getElementById(match.id).addEventListener("click", function() { match(form,match); });
-        }
-        // fetch more
+        viewMatches(form, json.items)
     } catch(e) {
         console.error(e.message);
     }
 } // searchGoogleAPI()
 
-function match(form, match) {
+function viewMatches(form, matches) {
+    document.getElementById("api-modal").innerHTML = "";
+    document.getElementById("api-modal").style.visibility = "visible";
+    for (const match of matches) {
+        // change to grab all authors and catagories
+        document.getElementById("api-modal").innerHTML += `
+            <div class="potential-match">
+                <img src="${((match.volumeInfo.imageLinks) ? match.volumeInfo.imageLinks.smallThumbnail : "" )}" alt="Cover Preview">
+                <table>
+                    <tr>
+                        <th colspan="2" class="title">${match.volumeInfo.title}</th>
+                    </tr>
+                    <tr>
+                        <th>ISBN:</th>
+                        <td>${((match.volumeInfo.industryIdentifiers) ? match.volumeInfo.industryIdentifiers[0].identifier : "" )}</td>
+                    </tr>
+                    <tr>
+                        <th>Date:</th>
+                        <td>${match.volumeInfo.publishedDate}</td>
+                    </tr>
+                    <tr>
+                        <th>Author:</th>
+                        <td>${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )}</td>
+                    </tr>
+                    <tr>
+                        <th>Illistrator:</th>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <th>Publisher:</th>
+                        <td>${match.volumeInfo.publisher}</td>
+                    </tr>
+                    <tr> 
+                        <th>Generes:</th>
+                        <td>${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )}</td>
+                    </tr>
+                    <tr>
+                        <th>Collection:</th>
+                        <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )}</td>
+                    </tr>
+                    <tr>
+                        <th>Volume:</th>
+                        <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
+                    </tr>
+                    <tr class="source">
+                        <td><a href="${match.volumeInfo.canonicalVolumeLink}" target="_blank">Source</a><td>
+                        <td><button type="button" id="${match.id}">Select Match</button></td>
+                    </tr>
+                </table>
+            </div>
+        `;
+        document.getElementById(match.id).addEventListener("click", function() { matchForm(form,match); });
+    }
+    // fetch more
+}
+
+function matchForm(form, match) {
     console.log("Calling match");
     // newValue for all
     // newValue for new -> currently null
@@ -134,61 +138,61 @@ function match(form, match) {
                     <th>Title:</th>
                     <td>${form.elements['title'].value}</td>
                     <td>${match.volumeInfo.title}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['title']},${match.volumeInfo.title})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="title-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>ISBN:</th>
                     <td>${form.elements['isbn'].value}</td>
                     <td>${((match.volumeInfo.industryIdentifiers) ? match.volumeInfo.industryIdentifiers[0].identifier : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['isbn']},${match.volumeInfo.industryIdentifiers[0].identifier})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="isbn-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>Date:</th>
                     <td>${form.elements['date'].value}</td>
                     <td>${match.volumeInfo.publishedDate}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['date']},${match.volumeInfo.publishedDate})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="date-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>Author:</th>
                     <td>${form.elements['author'].value}</td>
                     <td>${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['author']},${((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : "" )})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="author-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>Illistrator:</th>
                     <td>${form.elements['illistrator'].value}</td>
                     <td></td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['illistrator']}, null)">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="illistrator-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>Publisher:</th>
                     <td>${form.elements['publisher'].value}</td>
                     <td>${match.volumeInfo.publisher}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['publisher']},${match.volumeInfo.publisher})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="publisher-btn">Grab New</button></td>
                 </tr>
                 <tr> 
                     <th>Generes:</th>
                     <td>${form.elements['genere'].value}</td>
                     <td>${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['genere']},${((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : "" )})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="genere-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>Collection:</th>
                     <td>${form.elements['collection'].value}</td>
                     <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['collection']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : "" )})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="collection-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>Volume:</th>
                     <td>${form.elements['vnum'].value}</td>
                     <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['vnum']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="vnum-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <th>Issue:</th>
                     <td>${form.elements['inum'].value}</td>
                     <td>${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )}</td>
-                    <td class="grab-btn"><button type="button" onclick="newValue(${form.elements['inum']},${((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : "" )})">Grab New</button></td>
+                    <td class="grab-btn"><button type="button" id="inum-btn">Grab New</button></td>
                 </tr>
                 <tr>
                     <td colspan="2"><button type="button" onclick="closeAPIModal()">Exit</button></td>
@@ -196,6 +200,48 @@ function match(form, match) {
             </table>
         </div>
     `;
+
+    document.getElementById("title-btn").addEventListener("click", function() {
+        newValue(form.elements['title'], match.volumeInfo.title);
+        newValue(form.elements['sort-title'], match.volumeInfo.title);
+        matchForm(form, match);
+    });
+    document.getElementById("isbn-btn").addEventListener("click", function() {
+        newValue(form.elements['isbn'], ((match.volumeInfo.industryIdentifiers) ? match.volumeInfo.industryIdentifiers[0].identifier : null ));
+        matchForm(form, match);
+    });
+    document.getElementById("date-btn").addEventListener("click", function() {
+        newValue(form.elements['date'], match.volumeInfo.publishedDate);
+        matchForm(form, match);
+    });
+    document.getElementById("author-btn").addEventListener("click", function() {
+        newValue(form.elements['author'], ((match.volumeInfo.authors) ? match.volumeInfo.authors[0] : null ));
+        matchForm(form, match);
+    });
+    document.getElementById("illistrator-btn").addEventListener("click", function() {
+        newValue(form.elements['illistrator'], null);
+        matchForm(form, match);
+    });
+    document.getElementById("publisher-btn").addEventListener("click", function() {
+        newValue(form.elements['publisher'], match.volumeInfo.publisher);
+        matchForm(form, match);
+    });
+    document.getElementById("genere-btn").addEventListener("click", function() {
+        newValue(form.elements['genere'], ((match.volumeInfo.categories) ? match.volumeInfo.categories[0] : null ));
+        matchForm(form, match);
+    });
+    document.getElementById("collection-btn").addEventListener("click", function() {
+        newValue(form.elements['collection'], ((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.title : null ));
+        matchForm(form, match);
+    });
+    document.getElementById("vnum-btn").addEventListener("click", function() {
+        newValue(form.elements['vnum'], ((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : null ));
+        matchForm(form, match);
+    });
+    document.getElementById("inum-btn").addEventListener("click", function() {
+        newValue(form.elements['inum'], ((match.volumeInfo.seriesInfo) ? match.volumeInfo.seriesInfo.bookDisplayNumber : null ));
+        matchForm(form, match);
+    });
 } // match()
 
 function newValue(formElement, val) {
