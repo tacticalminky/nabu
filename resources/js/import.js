@@ -1,3 +1,13 @@
+/*
+This file is part of Nabu.
+
+Nabu is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+Nabu is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with Nabu. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 // takes in the form of the import item in json format and sends it to the server
 async function importItem(sendJson) {
     data = {
@@ -40,7 +50,7 @@ async function matchGoogleAPI(isbn, title, author, publisher, form) {
              + ((isbn) ? `+isbn:${isbn}` : "" )
              + ((title) ? `intitle:${title}` : "")
              + ((author) ? `+inauthor:${author}` : "" )
-             + ((publisher) ? `+:${publisher}` : "" )
+             + ((publisher) ? `+inpublisher:${publisher}` : "" )
              + `&orderBy=relevance`);
 
         if (!response.ok) {
@@ -95,12 +105,12 @@ async function matchGoogleAPI(isbn, title, author, publisher, form) {
                         </tr>
                         <tr class="source">
                             <td><a href="${match.volumeInfo.canonicalVolumeLink}" target="_blank">Source</a><td>
-                            <td><button type="button" id="${match.id}" onclick="match(${form},${match})">Select Match</button></td>
+                            <td><button type="button" id="${match.id}">Select Match</button></td>
                         </tr>
                     </table>
                 </div>
             `;
-            // document.getElementById(match.id).addEventListener("click", function() { match(form,match); });
+            document.getElementById(match.id).addEventListener("click", function() { match(form,match); });
         }
         // fetch more
     } catch(e) {
@@ -109,6 +119,7 @@ async function matchGoogleAPI(isbn, title, author, publisher, form) {
 } // searchGoogleAPI()
 
 function match(form, match) {
+    console.log("Calling match");
     // newValue for all
     // newValue for new -> currently null
     document.getElementById("api-modal").innerHTML = `
@@ -236,4 +247,3 @@ for (const form of forms) {
             form);
     });
 }
-

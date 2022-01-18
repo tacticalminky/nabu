@@ -1,6 +1,16 @@
+/*
+This file is part of Nabu.
+
+Nabu is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+Nabu is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along with Nabu. If not, see <https://www.gnu.org/licenses/>.
+*/
+
 /**
- * @author  TacticalMinky
- * @version development
+ * @author  Andrew Mink
+ * @version alpha
  * @date    8 January 2022
  * 
  * This file is everything, I tried the parts of the services namespace to each be in their own file,
@@ -12,13 +22,13 @@
  *                                          TABLE OF CONTENTS
  * page         Name
  *-----------------------------------------------------------------------------------------------------
- *  39      namespace services
- *  45          namespace database
- *  413         class ReadingRPC
- *  614         class DataRPC
- *  642         class SettingsRPC
- *  655     class WebSite
- *  849     main()
+ *  49      namespace services
+ *  55          namespace database
+ *  423         class ReadingRPC
+ *  630         class DataRPC
+ *  658         class SettingsRPC
+ *  671     class WebSite
+ *  866     main()
  */
 
 #include <cppcms/application.h>
@@ -715,7 +725,7 @@ private:
      * @param cnt any content view dirived from master
      */
     void ini(content::Master &cnt) {
-        cnt.title = "Nabu";
+        cnt.title = settings().get<std::string>("app.title");
     }
 
     /**

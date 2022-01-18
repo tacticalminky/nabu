@@ -1,15 +1,16 @@
 {  
     "app" : {
+        "title" : "Nabu",
         "page_chunk_size" : {
             "forward" : 5,
             "backward" : 3
         },
         "paths" : {
-            "db" : "",
-            "media" : "",
-            "tmp" : "",
-            "import" : "",
-            "covers" : ""
+            "db" : "./testing/database/test.db",
+            "media" : "./testing",
+            "tmp" : "./testing/tmp/pages/",
+            "import" : "./testing/imports/",
+            "covers" : "./testing/covers/"
         }
     },
     "service" : {  
@@ -30,8 +31,8 @@
         "listing" : true,
         "document_root" : "./resources",
         "alias" : [
-            { "url" : "/covers", "path" : "" },
-            { "url" : "/pages", "path" : "" }
+            { "url" : "/covers", "path" : "./testing/covers/" },
+            { "url" : "/pages", "path" : "./testing/tmp/pages/" }
         ]
     } 
 }
