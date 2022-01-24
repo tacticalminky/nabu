@@ -1,0 +1,81 @@
+<% skin myskin %>
+<% view import uses content::Import extends master %>
+<% template title() %><%= title %> :: Import<% end %>
+
+<% template page_content() %>
+    <div class="import">
+    <h2>Imports</h2>
+    <div class="import">
+    <% foreach item in imports %>
+    <% item %>
+        <form>
+            <div class="title">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="tilte" value='<%= item.title %>' required>
+            </div>
+            <div class="sortTitle">
+                <label for="sort-title">Sort Title:</label>
+                <input type="text" id="sort-title" name="sort-tilte" value='<%= item.sortTitle %>' required>
+            </div>
+            <div class="vnum">
+                <label for="vnum">Volume Number:</label>
+                <input type="number" id="vnum" name="vnum" <% if (item.volNum != 0) %>value='<%= item.volNum %>'<% end %> min="0">
+            </div>
+            <div class="inum">
+                <label for="inum">Issue Number:</label>
+                <input type="number" id="inum" name="inum" <% if (item.issNum != 0) %>value='<%= item.issNum %>'<% end %> min="0">
+            </div>
+            <div class="isbn">
+                <label for="isbn">ISBN:</label>
+                <input type="text" id="isbn" name="isbn" value='<%= item.isbn %>'>
+            </div>
+            <div class="date">
+                <label for="date">Date:</label>
+                <input type="date" id="date" name="date" value='<%= item.date %>'>
+            </div>
+            <div class="author">
+                <label for="author">Author:</label>
+                <input type="text" id="author" name="author" value='<%= item.author %>'>
+            </div>
+            <div class="illistrator">
+                <label for="illistrator">Illistrator:</label>
+                <input type="text" id="illistrator" name="illistrator" value='<%= item.illistrator %>'>
+            </div>
+            <div class="publisher">
+                <label for="publisher">Publisher:</label>
+                <input type="text" id="publisher" name="publisher" value='<%= item.publisher %>'>
+            </div>
+            <div class="genere">
+                <label for="genere">Generes:</label>
+                <input type="text" id="genere" name="genere" value='<%= item.generes %>'>
+            </div>
+            <div class="type">
+                <label for="type">Type:</label>
+                <select name="type" id="type" required>
+                    <option value="book">Book</option>
+                    <option value="comic">Comic</option>
+                    <option value="manga">Manga</option>
+                </select>
+            </div>
+            <div class="collection">
+                <label for="collection">Collection:</label>
+                <input type="text" id="collection" name="collection">
+            </div>
+            <input type="hidden" id="file" value='<%= item.file %>'>
+            <button type="button" class="api-search">Search Google Books</button>
+            <button type="submit">Import</button>
+        </form>
+    <% end %>
+    <% end %>
+    </div>
+    <div id="api-modal" class="api-modal">
+        <div class="api-modal-cnt">
+            <i class="fas fa-times close-match" onclick="closeAPIModal()"></i>
+            <div id="matches-cnt" class="matches-cnt"></div>
+        </div>
+    </div>
+    <script src="/resources/js/import.js"></script>
+<% end template %>
+
+<% end view %>
+<% end skin %>

@@ -1,10 +1,10 @@
 ### Testing materials ###
 .vscode/*
-testing/*
+build/testing/*
 
 ### Build files ###
 *.o
-views/myskin.cpp
+src/views/myskin.cpp
 
 ### Various tmp files ###
 *.swp

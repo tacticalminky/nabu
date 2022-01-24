@@ -1,0 +1,42 @@
+<% c++ #include "content.h" %>
+<% skin myskin %>
+<% view master uses content::Master %>
+<% template title() %><%= title %><% end %>
+
+<% template page_content() %>
+OVERRIDE
+<% end %>
+
+<% template render() %>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="robots" content="noindex"> <!-- Makes the website not show up in searches -->
+        <title><% include title() %></title>
+        <link rel="icon" type="image/x-icon" href="/resources/favicon.ico">
+        <link rel="stylesheet" href="/resources/css/styles.css">
+        <link rel="stylesheet" href="/resources/css/font-awesome/css/all.min.css">
+    </head>
+    <body>
+        <nav class="topnav">
+            <a href='<% url "library" %>'><i class="fas fa-book"></i> <%= title %></a>
+            <div style="flex-grow: 2;"></div>
+            <div class="import-dropdown">
+                <a href='<% url "import" %>'>Import <i class="fas fa-download"></i></a>
+            </div>
+            <div class="topnav-dropdown">
+                <i class="fas fa-user"></i>
+                <div class="topnav-dropdown-content">
+                    <a href='<% url "user" %>'>Settings</a>
+                    <a href='<% url "help" %>'>Help</a>
+                    <a href='<% url "login" %>'>Log Out</a>
+                </div>
+            </div>
+        </nav>
+        <div id="main_content"><% include page_content() %></div>
+    </body>
+</html>
+<% end template %>
+
+<% end view %>
+<% end skin %>

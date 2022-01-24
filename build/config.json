@@ -1,0 +1,60 @@
+{  
+    "app" : {
+        "title" : "Nabu",
+        "settings" : {
+            "user" : {
+                "default" : {}
+            },
+            "account" : {
+                "default" : {}
+            },
+            "admin" : {
+                "page_chunk_size" : {
+                    "forward" : 5,
+                    "backward" : 3
+                },
+                "paths" : {
+                    "db" : "./build/testing/database/test.db",
+                    "media" : "./build/testing",
+                    "tmp" : "./build/testing/tmp/pages/",
+                    "import" : "./build/testing/imports/",
+                    "covers" : "./build/testing/covers/"
+                }
+            },
+            "account_manager" : {},
+            "media_manager" : {},
+            "meintenance" : {}
+        }
+    },
+    "service" : {  
+        "api" : "http",  
+        "port" : 8080  
+    },
+    "http" : {  
+        "script" : "/mb.fcgi",  
+        "rewrite" : [  
+            { "regex" : "/resources(/.+)", "pattern" : "$1" },
+            { "regex" : "/covers(/.+)", "pattern" : "$0" },
+            { "regex" : "/pages(/.+)", "pattern" : "$0" },
+            { "regex" : ".*" , "pattern" : "/mb.fcgi$0" }  
+        ]  
+    },
+    "file_server" : {
+        "enable" : true,
+        "listing" : true,
+        "document_root" : "./build/resources",
+        "alias" : [
+            { "url" : "/covers", "path" : "./build/testing/covers/" },
+            { "url" : "/pages", "path" : "./build/testing/tmp/pages/" }
+        ]
+    },
+    "session" : {
+        "expire" : "renew",
+        "timeout" : 604800,
+        "location" : "client",
+        "client" : {
+            "hmac" : "sha1",
+            "hmac_key" : "3891bbf7f845fd4277008a63d72640fc13bb9a31"
+        }
+    } 
+}
