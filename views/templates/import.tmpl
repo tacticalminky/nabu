@@ -69,7 +69,10 @@
     <% end %>
     </div>
     <div id="api-modal" class="api-modal">
-        <div id="api-modal-cnt" class="api-modal-cnt"></div>
+        <div class="api-modal-cnt">
+            <i class="fas fa-times close-match" onclick="closeAPIModal()"></i>
+            <div id="matches-cnt" class="matches-cnt"></div>
+        </div>
     </div>
     <script src="/resources/js/import.js"></script>
 <% end template %>

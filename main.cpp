@@ -22,13 +22,12 @@ You should have received a copy of the GNU Affero General Public License along w
  *                                          TABLE OF CONTENTS
  * page         Name
  *-----------------------------------------------------------------------------------------------------
- *  51      namespace services
- *  58          namespace database
- *  478         class ReadingRPC
- *  685         class DataRPC
- *  713         class SettingsRPC
- *  726     class WebSite
- *  1022    main()
+ *  50      namespace services
+ *  57          namespace database
+ *  505         class ReadingRPC
+ *  712         class DataRPC
+ *  742     class WebSite
+ *  1039    main()
  */
 
 #include <cppcms/application.h>
@@ -329,6 +328,26 @@ namespace services {
         } // getCollectionID()
 
         /**
+         * getMediaID() grabs the id for the book with the given filename
+         * 
+         * @param filename the name of the file for the book
+         * @return the id of the book
+         */
+        std::string getMediaID(std::string const filename) {
+            std::cout << "Getting media_id for " << filename << std::endl;
+            transferVal.clear();
+
+            std::string sql;
+            sql = "SELECT media.media_id FROM media WHERE filename='" + filename + "';";
+            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+            
+            return transferVal;
+        }
+        
+        /**
          * import() takes in the info for a book to be added to the database, gets a page count form the book,
          * generates a new filename, builds the new path to the file, moves the file, and then adds the book to
          * the database.
@@ -410,6 +429,14 @@ namespace services {
             if (res != SQLITE_OK) {
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
+
+            // create the cover image
+            std::string cover = coverPath + getMediaID(newFilename) + ".png";
+            std::cout << "Creating image" << std::endl
+                << "    " << cover << std::endl;
+            mupdf::Matrix ctm = mupdf::Matrix();
+            doc->new_pixmap_from_page_number(0, ctm, mupdf::device_rgb(), 0)
+                .save_pixmap_as_png(cover.c_str());
         } // import()
 
         /**
@@ -706,17 +733,6 @@ namespace services {
             }
         } // import()
     }; // ImportRPC class
-    
-    /**
-     * 
-     */
-    class SettingsRPC : public cppcms::rpc::json_rpc_server {
-    public:
-        SettingsRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {}
-
-    private:
-    }; // SettingsRPC class
-    
 } // namespace services
 
 /**
@@ -737,7 +753,6 @@ public:
         
         attach(new services::ReadingRPC(srv),"/reading-rpc(/(\\d+)?)?",0);
         attach(new services::DataRPC(srv),"/data-rpc(/(\\d+)?)?",0);
-        // attach(new services::SettingsRPC(srv),"/settings-rpc(/(\\d+)?)?",0);
 
         dispatcher().assign("/",&WebSite::library,this);
         mapper().assign("library","/");
@@ -866,13 +881,15 @@ private:
             }
 
             fs::path file = entry.path();
+            std::string ext = file.extension();
+            if (ext != ".pdf" && ext != ".epub" && ext != ".cbz") {
+                continue;
+            }
+
             content::ImportItem item;
             item.file = file.filename();
-            // break up entry.stem() -> full title, sort title, volume/issue number
             item.title = file.stem();
             item.sortTitle = file.stem(); // handle a beginning the
-            // api for other data
-            // extension for type ?
             cnt.imports.push_back(item);
         }
         render("import", cnt);

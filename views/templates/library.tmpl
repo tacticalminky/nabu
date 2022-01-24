@@ -14,7 +14,7 @@
         </div>
         <% else %>
         <div class="media-item">
-            <img class="hover-shadow" src='/covers/vagabond-v01.jpg' alt='<%= item.title %>' loading="lazy" onclick='openModal();loadInit("<%= item.id %>")'>
+            <img class="hover-shadow" src='/covers/<%= item.id %>.png' alt='<%= item.title %>' loading="lazy" onclick='openModal();loadInit("<%= item.id %>")'>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
             <% if not empty item.volume %><p>Volume <%= item.volume %></p><% end %>

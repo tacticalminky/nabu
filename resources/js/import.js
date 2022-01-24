@@ -41,7 +41,7 @@ async function importItem(sendJson) {
     }
 } // importItem()
 
-// there must be at least on of the three paramaters for the seach to function
+// there must be at least on of the first four paramaters for the seach to function
 // for best results the isbn should be used or the title and author together
 // no dashes in isbn
 async function matchGoogleAPI(isbn, title, author, publisher, form) {
@@ -67,11 +67,11 @@ async function matchGoogleAPI(isbn, title, author, publisher, form) {
 } // searchGoogleAPI()
 
 function viewMatches(form, matches) {
-    document.getElementById("api-modal-cnt").innerHTML = "";
+    document.getElementById("matches-cnt").innerHTML = "";
     document.getElementById("api-modal").style.visibility = "visible";
     for (const match of matches) {
         // change to grab all authors and catagories
-        document.getElementById("api-modal-cnt").innerHTML += `
+        document.getElementById("matches-cnt").innerHTML += `
             <div class="potential-match">
                 <img src="${((match.volumeInfo.imageLinks) ? match.volumeInfo.imageLinks.smallThumbnail : "" )}" alt="Cover Preview">
                 <table>
@@ -120,12 +120,12 @@ function viewMatches(form, matches) {
         setTimeout(() => { document.getElementById(match.id).addEventListener("click", function() { matchForm(form,match); }); }, 20);
     }
     // fetch more
-}
+} // viewMatches()
 
 function matchForm(form, match) {
     // newValue for all
     // newValue for new -> currently null
-    document.getElementById("api-modal-cnt").innerHTML = `
+    document.getElementById("matches-cnt").innerHTML = `
         <div class="match">
             <table>
                 <tr>
@@ -249,7 +249,7 @@ function newValue(formElement, val) {
 
 function closeAPIModal() {
     document.getElementById("api-modal").style.visibility = "hidden";
-    document.getElementById("api-modal-cnt").innerHTML = "";
+    document.getElementById("matches-cnt").innerHTML = "";
 } // closeAPIModal()
 
 // sets what to do for each form on submit

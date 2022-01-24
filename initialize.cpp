@@ -79,7 +79,7 @@ int main(int argc, char ** argv) {
         "genere         TEXT," \
         "type           TEXT        NOT NULL," \
         "collection_id  INT," \
-        "filename       TEXT        NOT NULL," \
+        "filename       TEXT        UNIQUE NOT NULL," \
         "file_loc       INT         NOT NULL," \
         "FOREIGN KEY(collection_id) REFERENCES collection(collection_id) ON DELETE SET NULL," \
         "FOREIGN KEY(file_loc) REFERENCES directories(directory_id) );"; // maybe have it CASCADE -> could be bad though
