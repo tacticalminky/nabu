@@ -5,19 +5,6 @@
 #include "database.h"
 
 namespace services {
-    std::string mediaPath, coverPath, importPath, pagesPath;
-    std::string getMediaPath() {
-        return mediaPath;
-    };
-    std::string getCoverPath() {
-        return coverPath;
-    };
-    std::string getImportPath() {
-        return importPath;
-    };
-    std::string getPagesPath() {
-        return pagesPath;
-    };
 
     namespace database {
         void open(std::string const &filepath);

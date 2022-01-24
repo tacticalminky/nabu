@@ -20,13 +20,13 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <filesystem>
 
 #include "database.h"
-#include "rpc.h"
+#include "services.h"
 #include "../views/content.h"
 
 namespace fs = std::filesystem;
 
 namespace services {
-    
+
     namespace database {
         sqlite3 *db;
         char *zErrMsg = 0;
@@ -94,7 +94,7 @@ namespace services {
             item.progress       = 0; // get progress or 0
             item.isCollection   = false;
 
-            glb_media.push_back(item);            
+            addToMediaList(item);            
             return 0;
         } // mediaCallback()
 
@@ -117,7 +117,7 @@ namespace services {
             item.progress       = 0; // get progress or 0
             item.isCollection   = true;
 
-            glb_media.push_back(item);            
+            addToMediaList(item);            
             return 0;
         } // collectionCallback()
         
@@ -183,7 +183,7 @@ namespace services {
          */
         void getMedia() {
             std::cout << "Getting books from database not in a collection" << std::endl;
-            glb_media.clear();
+            clearMediaList();
             std::string sql;
             sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id IS NULL;";
             int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
@@ -208,7 +208,7 @@ namespace services {
          */
         void getCollectionMedia(std::string const &collection_id) {
             std::cout << "Getting books in the collection" << std::endl;
-            glb_media.clear();
+            clearMediaList();
             std::string sql;
             sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id=" + collection_id + " ORDER BY media.issue_num DESC;";
             int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
@@ -326,14 +326,12 @@ namespace services {
          * the database.
          * 
          * @param json contains the information about the book in json format
-         * @param importPath path to /imports, including from config.json
-         * @param mediaPath path to /media, not including from config.json
          */
         void import(cppcms::json::value json) {
             std::cout << "Importing a book to the database" << std::endl;
 
             // open document, get page count and make cover 
-            fs::path oldFilePath(importPath + json.get<std::string>("file")); // fix for recursive files
+            fs::path oldFilePath(getImportPath() + json.get<std::string>("file")); // fix for recursive files
             if (!fs::exists(oldFilePath)) {
                 throw std::runtime_error("Can't find file: " + oldFilePath.string());
             }
@@ -353,7 +351,7 @@ namespace services {
 
             // create the new directories and add to the database 
             fs::path newDirPathRelativeToMedia("media/" + json.get<std::string>("title")); // relative to /media
-            fs::path newPath(mediaPath);
+            fs::path newPath(getMediaPath());
             fs::path prevPart;
             for (const auto& part : newDirPathRelativeToMedia) {
                 newPath.append(part.c_str());
@@ -401,7 +399,7 @@ namespace services {
             }
 
             // create the cover image
-            std::string cover = coverPath + getMediaID(newFilename) + ".png";
+            std::string cover = getCoverPath() + getMediaID(newFilename) + ".png";
             std::cout << "Creating image" << std::endl
                 << "    " << cover << std::endl;
             mupdf::Matrix ctm = mupdf::Matrix();

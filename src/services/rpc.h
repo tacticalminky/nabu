@@ -6,10 +6,7 @@
 
 #include <mupdf/classes.h>
 
-#include "../views/content.h"
-
 namespace services {
-    std::vector<content::Item> glb_media;
 
     class ReadingRPC : public cppcms::rpc::json_rpc_server {
     private:
@@ -27,7 +24,7 @@ namespace services {
         void loadInit(std::string const &setId);
         void loadForwards(int const &current, int const &start);
         void loadBackwards(int const &current, int const &start);
-        std::string generateImgTag(std::string const &filename);
+        std::string generateImg(int const &pageNumber);
     };
 
     class DataRPC : public cppcms::rpc::json_rpc_server {

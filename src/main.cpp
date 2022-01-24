@@ -13,21 +13,8 @@ You should have received a copy of the GNU Affero General Public License along w
  * @version alpha
  * @date    23 January 2022
  * 
- * This file is everything, I tried the parts of the services namespace to each be in their own file,
- * but I was unabale to get it to run after compiling. I am still pretty new at making programs, so
- * it was probably something I was doing wrong. Because of that, I made a table of contents that I will
- * try to keep updated. I don't know why I am typing this, it is in a private repo, so no one will see
- * it but whatever.
- *  
- *                                          TABLE OF CONTENTS
- * page         Name
- *-----------------------------------------------------------------------------------------------------
- *  50      namespace services
- *  57          namespace database
- *  505         class ReadingRPC
- *  712         class DataRPC
- *  742     class WebSite
- *  1039    main()
+ * WebSite is the main application that the other applications attach to and run from. WebSite handles
+ * the construction of the website and url dispatching.
  */
 
 #include <cppcms/application.h>
@@ -40,702 +27,15 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include <mupdf/classes.h>
 #include <sqlite3.h>
-
 #include <filesystem>
 
 #include "views/content.h"
+#include "services/services.h"
+#include "services/rpc.h"
+#include "services/database.h"
 
 namespace fs = std::filesystem;
 
-namespace services {
-    std::string mediaPath, coverPath, importPath, pagesPath;
-    std::vector<content::Item> glb_media;
-    
-    /**
-     * The database namespace contains the calls to the database and the processing of the imediate returns
-     */
-    namespace database {
-        sqlite3 *db;
-        char *zErrMsg = 0;
-        std::string docFilePath;
-        std::string transferVal;
-        
-        /**
-         * Opens the database with the given filepath
-         * 
-         * @param filepath the full file path, including the name, to the database file
-         */
-        void open(std::string const filepath) {
-            if (db) {
-                sqlite3_close(db);
-            }
-            int res = sqlite3_open(filepath.c_str(), &db);
-            if (res) {
-                throw std::invalid_argument("Database failed to open: " + std::string(sqlite3_errmsg(db)));
-            }
-            std::cout << "Database opened" << std::endl;
-        } // open()
-
-        /**
-         * callback() is a generic callback for sql commands that does nothing.
-         * All callback functions take the same paramaters
-         * 
-         * @param data provided in the 4th arg of sqlite3_exec()
-         * @param argc number of columns in row
-         * @param argv array of strings representing fields in the row
-         * @param azColName array of strings representing column names
-         */
-        static int callback(void* data, int argc, char **argv, char **azColName) {
-            return 0;
-        } // callback()
-        
-        /**
-         * getCallback() gets a single value from the database and sets it to transferVal
-         * 
-         * @param argv 0->any value to transfer
-         */
-        static int getCallback(void* data, int argc, char **argv, char **azColName) {
-            if (argc != 1) {
-                throw std::invalid_argument("Database query should contain 1 argument, but has: " + std::to_string(argc));
-            }
-            transferVal = std::string(argv[0]);
-            return 0;
-        } // getCallback()
-
-        /**
-         * mediaCallback() creates a content::Item for each entry returned by the sql requests and then
-         * populates glb_media with the Item
-         * 
-         * @param argv 0->media_id, 1->title, 2->sort_title, 3->volume_num, 4->issue_num
-         */
-        static int mediaCallback(void* data, int argc, char **argv, char **azColName) {
-            if (argc != 5) {
-                throw std::invalid_argument("Database query should contain 5 arguments, but has: " + std::to_string(argc));
-            }
-            content::Item item;
-            item.id             = std::string(argv[0]);
-            item.title          = std::string(argv[1]);
-            item.sortTitle      = std::string(argv[2]);
-            item.volume         = ((argv[3]) ? std::string(argv[3]) : "" );
-            item.issue          = ((argv[4]) ? std::string(argv[4]) : "" );
-            item.progress       = 0; // get progress or 0
-            item.isCollection   = false;
-
-            glb_media.push_back(item);            
-            return 0;
-        } // mediaCallback()
-
-        /**
-         * collectionCallback() creates a content::Item for each entry returned by the sql requests and
-         * the populates glb_media with the Item
-         * 
-         * @param argv 0->collection_id, 1->title, 2->sort_title, 3->number_vol, 4->number_iss
-         */
-        static int collectionCallback(void* data, int argc, char **argv, char **azColName) {
-            if (argc != 5) {
-                throw std::invalid_argument("Database query should contain 5 arguments, but has: " + std::to_string(argc));
-            }
-            content::Item item;
-            item.id             = std::string(argv[0]);
-            item.title          = std::string(argv[1]);
-            item.sortTitle      = std::string(argv[2]);
-            item.volume         = ((argv[3]) ? std::string(argv[3]) : "" );
-            item.issue          = ((argv[4]) ? std::string(argv[4]) : "" );
-            item.progress       = 0; // get progress or 0
-            item.isCollection   = true;
-
-            glb_media.push_back(item);            
-            return 0;
-        } // collectionCallback()
-        
-        /**
-         * walkDirectoriesCallback() recursivly calls itself as it walks backwards through a directroy path in
-         * the directory database. Once the root directory has been reached, the path starts to be built with
-         * the name of each directory on docFilePath.
-         *
-         * @param argv 0->parent_id, 1->name
-         */
-        static int walkDirectoriesCallback(void* data, int argc, char **argv, char **azColName) {
-            if (argc != 2) {
-                throw std::invalid_argument("Database query should contain 2 arguments, but has: " + std::to_string(argc));
-            }
-
-            if (argv[0]) {
-                std::cout << "Walking past " << std::string(argv[1]) << std::endl;
-                std::string sql;
-                sql = "SELECT directories.parent_id, directories.name FROM directories WHERE directory_id =" + std::string(argv[0]) + ";";
-                int res = sqlite3_exec(db, sql.c_str(), walkDirectoriesCallback, data, &zErrMsg);
-                if (res != SQLITE_OK) {
-                    throw std::runtime_error("SQL error:\n" + std::string(zErrMsg));
-                }
-            }
-            std::cout << "Currently at " << std::string(argv[1]) << std::endl;
-            docFilePath.append(argv[1]);
-            docFilePath.append("/");
-
-            std::cout << docFilePath << std::endl;
-            return 0;
-        } // walkDirectoriesCallback()
-
-        /**
-         * fetchFileCallback() starts the call to walkDirectoriesCallback with the directory_id that the file is
-         * contained in and once the filepath is built, the filename is appended to the end of the path to finish
-         * off docFilePath for the book.
-         * 
-         * @param argv 0->file_loc, 1->filename
-         */
-        static int fetchFileCallback(void* data, int argc, char **argv, char **azColName) {
-            if (argc != 2) {
-                throw std::invalid_argument("Database query should contain 2 arguments, but has: " + std::to_string(argc));
-            }
-            std::cout << "Fetching path to '" << std::string(argv[1]) << "' from the database" << std::endl;
-            
-            std::string sql;
-            sql = "SELECT directories.parent_id, directories.name FROM directories WHERE directory_id =" + std::string(argv[0]) + ";";
-            int res = sqlite3_exec(db, sql.c_str(), walkDirectoriesCallback, data, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error:\n" + std::string(zErrMsg));
-            }
-
-            docFilePath.append(argv[1]);
-
-            std::cout << docFilePath << std::endl;
-            return 0;
-        } // fetchFileCallback()
-
-        /**
-         * getMedia() clears glb_media before making a sql request for media that don't belong to a collection
-         * and for all of the collections. The media request is sent to mediaCallback() and te collection request
-         * is sent to collectionCallback() to handle the retrieved data and repopulate glb_media.
-         */
-        void getMedia() {
-            std::cout << "Getting books from database not in a collection" << std::endl;
-            glb_media.clear();
-            std::string sql;
-            sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id IS NULL;";
-            int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-            
-            std::cout << "Getting collections" << std::endl;
-            sql = "SELECT collections.collection_id, collections.title, collections.sort_title, collections.number_vol, collections.number_iss FROM collections;";
-            res = sqlite3_exec(db, sql.c_str(), collectionCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-        } // getMedia()
-
-        /**
-         * getCollectionMedia() clears glb_media before making a sql request for the infomation of all books belonging
-         * to a given collection. The request is sent to mediaCallback() for handling the information and rebuilding
-         * glb_media.
-         * 
-         * @param id the id of the collection where the requested books belong
-         */
-        void getCollectionMedia(std::string const id) {
-            std::cout << "Getting books in the collection" << std::endl;
-            glb_media.clear();
-            std::string sql;
-            sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id=" + id + " ORDER BY media.issue_num DESC;";
-            int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-        } // getCollectionMedia()
-
-        /**
-         * fetchFile() assigns docFilePath to '/' and then calls for the filename and parent directory with
-         * fetchFileCallback where the rest of the filepath is constructed onto docFilePath before it is returned
-         * 
-         * @param media_id the id of the book whose file path is wanted
-         * @return the finilaized docFilePath
-         */
-        std::string fetchFile(std::string const media_id) {
-            std::cout << "Getting the file for the book" << std::endl;
-            docFilePath = "/";
-            std::string sql;
-            sql = "SELECT media.file_loc, media.filename FROM media WHERE media_id=" + media_id + ";";
-            int res = sqlite3_exec(db, sql.c_str(), fetchFileCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-
-            return docFilePath;
-        }
-
-        /**
-         * getDirectoryID() grabs the id for a given directory
-         * 
-         * @param name the name of the 
-         * @return the id of the directory
-         */
-        std::string getDirectoryID(std::string const name) {
-            std::cout << "Getting directory_id for " << name << std::endl;
-            transferVal.clear();
-
-            std::string sql;
-            sql = "SELECT directories.directory_id FROM directories WHERE name='" + name + "';";
-            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-            
-            return transferVal;
-        } // getDirectoryID()
-
-        /**
-         * getCollectionID() checks the database for if the collection with the given name exists, if
-         * it does not exist the collection is created and the id is returned. If the collection does
-         * exits, the id is grabbed
-         * 
-         * @param name the name of the collection
-         * @return the id of the collection
-         */
-        std::string getCollectionID(std::string const name) {
-            std::cout << "Getting collection_id for " << name << std::endl;
-            transferVal.clear();
-
-            std::string sql;
-            struct sqlite3_stmt *selectstmt;
-            sql = "SELECT * FROM collections WHERE title='" + name + "';";
-            int res = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-            if (sqlite3_step(selectstmt) != SQLITE_ROW) {
-                std::cout << "Making collection for " << name << std::endl;
-                // handle leading the for sort_title
-                std::hash<std::string> str_hash;
-                int hashVal = str_hash(name);
-                sql = "INSERT INTO collections (collection_id, title, sort_title)" \
-                    "VALUES (" + std::to_string(hashVal) + ", '" + name + "', '" + name + "');";
-                res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
-                if (res != SQLITE_OK) {
-                    throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-                }
-                return std::to_string(hashVal);
-            }
-            sqlite3_finalize(selectstmt);
-            
-            sql = "SELECT collections.collection_id FROM collections WHERE title='" + name + "';";
-            res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-
-            return transferVal;
-        } // getCollectionID()
-
-        /**
-         * getMediaID() grabs the id for the book with the given filename
-         * 
-         * @param filename the name of the file for the book
-         * @return the id of the book
-         */
-        std::string getMediaID(std::string const filename) {
-            std::cout << "Getting media_id for " << filename << std::endl;
-            transferVal.clear();
-
-            std::string sql;
-            sql = "SELECT media.media_id FROM media WHERE filename='" + filename + "';";
-            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-            
-            return transferVal;
-        }
-        
-        /**
-         * import() takes in the info for a book to be added to the database, gets a page count form the book,
-         * generates a new filename, builds the new path to the file, moves the file, and then adds the book to
-         * the database.
-         * 
-         * @param json contains the information about the book in json format
-         * @param importPath path to /imports, including from config.json
-         * @param mediaPath path to /media, not including from config.json
-         */
-        void import(cppcms::json::value json) {
-            std::cout << "Importing a book to the database" << std::endl;
-
-            // open document, get page count and make cover 
-            fs::path oldFilePath(importPath + json.get<std::string>("file")); // fix for recursive files
-            if (!fs::exists(oldFilePath)) {
-                throw std::runtime_error("Can't find file: " + oldFilePath.string());
-            }
-
-            mupdf::Document *doc = new mupdf::Document(oldFilePath.c_str());
-            int totalPages = doc->count_pages();
-            
-            // build the new filename from the title and volume or issue of the book, keeping the same extension
-            std::string newFilename = json.get<std::string>("title");
-            if (!json.get<std::string>("volNum").empty()) {
-                newFilename.append(" - vol" + json.get<std::string>("volNum"));
-            } else if (!json.get<std::string>("issNum").empty()) {
-                newFilename.append(" - iss" + json.get<std::string>("issNum"));
-            }
-            // make cover image with newFilename
-            newFilename.append(oldFilePath.extension());
-
-            // create the new directories and add to the database 
-            fs::path newDirPathRelativeToMedia("media/" + json.get<std::string>("title")); // relative to /media
-            fs::path newPath(mediaPath);
-            fs::path prevPart;
-            for (const auto& part : newDirPathRelativeToMedia) {
-                newPath.append(part.c_str());
-                std::cout << newPath.c_str() << std::endl;
-                if (fs::create_directory(newPath)) {
-                    // directory was created -> add to database
-                    std::string sqlTMP;
-                    sqlTMP = "INSERT INTO directories (parent_id, name)" \
-                        "VALUES (" + getDirectoryID(prevPart.c_str()) + ",'" + part.c_str() + "');";
-                    int resTMP = sqlite3_exec(db, sqlTMP.c_str(), callback, 0, &zErrMsg);
-                    if (resTMP != SQLITE_OK ) {
-                        throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-                    }
-                }
-                prevPart = part;
-            }
-            newPath.append(newFilename);
-            std::cout << "Moving: " << newFilename << std::endl;
-            fs::rename(oldFilePath, newPath);
-
-            // Insert the book into the media database with all the new infomation
-            std::cout << "Adding to database" << std::endl;
-            std::string sql;
-            sql = "INSERT INTO media (title, sort_title, volume_num, issue_num, isbn, total_pages, date, author, illistrator, publisher, genere, type, collection_id, filename, file_loc)" \
-                "VALUES ('"
-                    + json.get<std::string>("title") + "','"
-                    + json.get<std::string>("sortTitle") + "',"
-                    + ((json.get<std::string>("volNum").empty()) ? "NULL" : "'" + json.get<std::string>("volNum") + "'" ) + ","
-                    + ((json.get<std::string>("issNum").empty()) ? "NULL" : "'" + json.get<std::string>("issNum") + "'" ) + ","
-                    + ((json.get<std::string>("isbn").empty()) ? "NULL" : "'" + json.get<std::string>("isbn") + "'" ) + ","
-                    + std::to_string(totalPages) + ","
-                    + ((json.get<std::string>("date").empty()) ? "NULL" : "'" + json.get<std::string>("date") + "'" ) + ","
-                    + ((json.get<std::string>("author").empty()) ? "NULL" : "'" + json.get<std::string>("author") + "'" ) + ","
-                    + ((json.get<std::string>("illistrator").empty()) ? "NULL" : "'" + json.get<std::string>("illistrator") + "'" ) + ","
-                    + ((json.get<std::string>("publisher").empty()) ? "NULL" : "'" + json.get<std::string>("publisher") + "'" ) + ","
-                    + ((json.get<std::string>("genere").empty()) ? "NULL" : "'" + json.get<std::string>("genere") + "'" ) + ",'"
-                    + json.get<std::string>("type") + "',"
-                    + ((json.get<std::string>("collection").empty()) ? "NULL" : getCollectionID(json.get<std::string>("collection")) ) + ",'"
-                    + newFilename + "','"
-                    + getDirectoryID(newPath.parent_path().filename()) +
-                "');";
-            int res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-
-            // create the cover image
-            std::string cover = coverPath + getMediaID(newFilename) + ".png";
-            std::cout << "Creating image" << std::endl
-                << "    " << cover << std::endl;
-            mupdf::Matrix ctm = mupdf::Matrix();
-            doc->new_pixmap_from_page_number(0, ctm, mupdf::device_rgb(), 0)
-                .save_pixmap_as_png(cover.c_str());
-        } // import()
-
-        /**
-         * validateLogin() checks to see if the given credentials are valid
-         * 
-         * @param username the username to be validated
-         * @param password the password in plain text to be validated
-         * @return weither or not the user exists and is enabled
-         */
-        bool validateLogin(std::string const username, std::string const password) {
-            std::cout << "Validating user:  " << username << std::endl;
-
-            std::string sql;
-            struct sqlite3_stmt *selectstmt;
-            std::hash<std::string> str_hash;
-            sql = "SELECT * FROM users WHERE username='" + username + "' AND password_hash='" + std::to_string(str_hash(password)) + "';";
-            int res = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-            if (sqlite3_step(selectstmt) == SQLITE_ROW) {
-                std::cout << "User is valid" << std::endl;
-                // check if user is enabled -> return false
-                return true;
-            }
-            sqlite3_finalize(selectstmt);
-            std::cout << "User is disabled or doesn't exist" << std::endl;
-            return false;
-        }
-
-        /**
-         * getPermissions() takes a user and fetches the permissions for the user
-         * 
-         * @param username the username for the user
-         * @return the permission of the user
-         */
-        std::string getPermissions(std::string const username) {
-            std::cout << "Getting permissions for " << username << std::endl;
-            transferVal.clear();
-
-            std::string sql;
-            sql = "SELECT users.privileges FROM users WHERE username='" + username + "';";
-            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
-            if (res != SQLITE_OK) {
-                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
-            }
-
-            return transferVal;
-        }
-        
-        /**
-         * close() closes the database
-         */
-        void close() {
-            sqlite3_close(db);
-            std::cout << "Closed database" << std::endl;
-        } // close()
-    } // namespace database
-
-    /**
-     * ReadingRPC handles all of the calls related to viewing a book. 
-     * Including:
-     *      Loading pages for the book and sending html for the client to view
-     * ##   Updating book and collection progress
-     */
-    class ReadingRPC : public cppcms::rpc::json_rpc_server {
-    private:
-        int pageChunkSizeForwards, pageChunkSizeBackwards; // number of pages to be loaded per call defined in config.json
-        int pageCount, firstPageLoaded, lastPageLoaded, currentPage;
-        std::string id;
-        mupdf::Document *doc;
-        mupdf::Matrix myMatrix;
-        mupdf::Colorspace myColor;
-    
-    public:
-        /**
-         * Get the page chunk size from config.json and bind the functions to the applicaion
-         */
-        ReadingRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
-            std::cout << "Setting pageChunkSize" << std::endl;
-            pageChunkSizeForwards = settings().get<int>("app.settings.admin.page_chunk_size.forward");
-            pageChunkSizeBackwards = settings().get<int>("app.settings.admin.page_chunk_size.backward");
-            
-            std::cout << "Binding reading controls" << std::endl;
-            bind("loadInit",cppcms::rpc::json_method(&ReadingRPC::loadInit,this),method_role);
-            bind("loadForwards",cppcms::rpc::json_method(&ReadingRPC::loadForwards,this),method_role);
-            bind("loadBackwards",cppcms::rpc::json_method(&ReadingRPC::loadBackwards,this),method_role);
-        }
-
-    private:
-        /**
-         * Every called book is sent here with an id so that it can be processed to return a book
-         *    1. The book is loaded from the location in the database with the given id and start page which is grabbed from the database
-         *          1a) the start page keeps track of the loading progress so that the book can load in chunks
-         *          1b) the book is cached so that it is not continuously opened and closed
-         * ## 2. Checks to see if the book is reflowable, continueing this step if it is
-         *          2a) adjusts the reflowable book to the user's preferences
-         *    3. Opens the start page and saves a png of the in the tmp directory 
-         *    4. Creates an image html tag with the address of the stored page and adds it to the returnHTML
-         *    5. Repeat steps 3-4 for every page within the pageChunkSizeForwards limit
-         *    6. Return the html with other information in a json formate for the client to use to view the book
-         *
-         * @param setId id of the book that is to be viewed
-         */
-        void loadInit(std::string const &setId) {
-            if (false) { // check id validity
-                return_error("Given id is not valid");
-                return;
-            }
-            id = setId;
-             
-            std::string file =  mediaPath + database::fetchFile(id);
-            doc = new mupdf::Document(file.c_str());
-            myMatrix = mupdf::Matrix();
-            myColor = mupdf::device_rgb();
-            pageCount = doc->count_pages(); // check against database and throw error and drop doc if diffrent
-                
-            std::cout << "Page Count: " << pageCount << std::endl << "FilePath: " << file.c_str() << std::endl;
-
-            currentPage = 0; // grab from database make sure between zero and last page => if null or last page make 0
-            firstPageLoaded = currentPage;
-            int endPage;
-            if (firstPageLoaded + pageChunkSizeForwards < pageCount) {
-                endPage = firstPageLoaded + pageChunkSizeForwards;
-            } else {
-                endPage = pageCount;
-            }
-
-            std::string returnHTML;
-            for(int pageNum = firstPageLoaded; pageNum < endPage; pageNum++) {
-                std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-                fs::path image(pagesPath + filename);
-                std::cout << image.c_str() << std::endl;
-                
-                if(!fs::exists(image)) {
-                    doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                        .save_pixmap_as_png(image.c_str());
-                }
-
-                returnHTML.append(generateImgTag(filename));
-            }
-
-            lastPageLoaded = endPage;
-            
-            cppcms::json::value json;
-            json["html"] = returnHTML;
-            json["firstLoaded"] = firstPageLoaded;
-            json["lastLoaded"] = endPage;
-            json["pageCount"] = pageCount;
-            json["isDoubleView"] = false;
-            json["forwardsChunk"] = pageChunkSizeForwards;
-            json["backwardsChunk"] = pageChunkSizeBackwards;
-            return_result(json);
-        } // loadInit()
-
-        /**
-         * Checks if there is an open book or not and the validity of the paramaters, then loads a pageChunkSizeForwards
-         * the same way loadInit does, and finaly return the html with the new first and last loaded pages
-         *  
-         * @param current the current page sent from the client
-         * @param start the last page loaded by the client to be checked against the last page of loaded by the server
-         */
-        void loadForwards(int const &current, int const &start) {
-            if (!doc) {
-                return_error("No document is open");
-                return;
-            }
-            if (current < 0 || current >= pageCount || current > start || start >= pageCount) {
-                return_error("Page range OUT_OF_BOUNDS");
-                return;
-            }
-            if (start != lastPageLoaded) {
-                return_error("Page range missing");
-                return;
-            }
-            currentPage = current;
-            
-            int endPage;
-            if (lastPageLoaded + pageChunkSizeForwards < pageCount) {
-                endPage = lastPageLoaded + pageChunkSizeForwards;
-            } else {
-                endPage = pageCount;
-            }
-            
-            std::string returnHTML;
-            for(int pageNum = lastPageLoaded; pageNum < endPage; pageNum++) {
-                std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-                fs::path image(pagesPath + filename);
-                std::cout << image.c_str() << std::endl;
-                
-                if(!fs::exists(image)) {
-                    doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                        .save_pixmap_as_png(image.c_str());
-                }
-
-                returnHTML.append(generateImgTag(filename));
-            }
-            
-            lastPageLoaded = endPage;
-            
-            cppcms::json::value json;
-            json["html"] = returnHTML;
-            json["firstLoaded"] = firstPageLoaded;
-            json["lastLoaded"] = endPage;
-            return_result(json);
-        } // loadForwards()
-
-        /**
-         * Checks if there is an open book or not and the validity of the paramaters, then loads a pageChunkSizeBackwards
-         * the same way loadInit does, and finaly return the html with the new first and last loaded pages
-         *  
-         * @param current the current page sent from the client
-         * @param start the first page loaded by the client to be checked against the first page of loaded by the server
-         */
-        void loadBackwards(int const &current, int const &start) {
-            if (!doc) {
-                return_error("No document is open");
-                return;
-            }
-            if (current < 0 || current < start) {
-                return_error("Page range OUT_OF_BOUNDS");
-                return;
-            }
-            if (start != firstPageLoaded) {
-                return_error("Page range missing");
-                return;
-            }
-            currentPage = current;
-            
-            int endPage;
-            if (firstPageLoaded - pageChunkSizeBackwards < 0) {
-                endPage = 0;
-            } else {
-                endPage = firstPageLoaded - pageChunkSizeBackwards;
-            }
-            
-            std::string returnHTML;
-            for(int pageNum = endPage; pageNum < firstPageLoaded; pageNum++) {
-                std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-                fs::path image(pagesPath + filename);
-                std::cout << image.c_str() << std::endl;
-                
-                if(!fs::exists(image)) {
-                    doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                        .save_pixmap_as_png(image.c_str());
-                }
-                
-                returnHTML.append(generateImgTag(filename));
-            }
-
-            firstPageLoaded = endPage;
-
-            cppcms::json::value json;
-            json["html"] = returnHTML;
-            json["firstLoaded"] = endPage;
-            json["lastLoaded"] = lastPageLoaded;
-            return_result(json);
-        } // loadBackwards
-
-        /**
-         * Acts as a generic <img> tag generater for the other 3 load functions
-         * 
-         * @param fileName name of the page file
-         */
-        std::string generateImgTag(std::string const fileName) {
-           return "<img class='myPages' src='/pages/" + fileName + "'>";
-        }
-    }; // ReadRPC class
-
-    /**
-     * DataRPC handles all the call related to importing books
-     */
-    class DataRPC : public cppcms::rpc::json_rpc_server {
-    public:
-        DataRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
-            std::cout << "Binding data controls" << std::endl;
-            bind("import",cppcms::rpc::json_method(&DataRPC::import,this),method_role);
-        }
-
-    private:
-        /**
-         * import() 
-         */
-        void import(cppcms::json::value json) {
-            std::cout << "import() called" << std::endl;
-            json.save(std::cout,cppcms::json::readable); // prints json
-            try {
-                database::import(json);
-                return_result("Successfully added to the database");
-            } catch (std::exception const &e) {
-                std::cout << e.what() << std::endl;
-                return_error("Error: " + std::string(e.what()));
-                return;
-            }
-        } // import()
-    }; // DataRPC class
-} // namespace services
-
-/**
- * WebSite is the main application that the other applications attach to and run from. WebSite handles
- * the construction of the website and url dispatching.
- */
 class WebSite : public cppcms::application {
 public:
     /**
@@ -743,10 +43,10 @@ public:
      */
     WebSite(cppcms::service &srv) : cppcms::application(srv) {
         services::database::open(settings().get<std::string>("app.settings.admin.paths.db"));
-        services::mediaPath = settings().get<std::string>("app.settings.admin.paths.media");
-        services::coverPath = settings().get<std::string>("app.settings.admin.paths.covers");
-        services::importPath = settings().get<std::string>("app.settings.admin.paths.import");
-        services::pagesPath = settings().get<std::string>("app.settings.admin.paths.tmp");
+        services::setMediaPath(settings().get<std::string>("app.settings.admin.paths.media"));
+        services::setCoverPath(settings().get<std::string>("app.settings.admin.paths.covers"));
+        services::setImportPath(settings().get<std::string>("app.settings.admin.paths.import"));
+        services::setPagesPath(settings().get<std::string>("app.settings.admin.paths.tmp"));
         
         attach(new services::ReadingRPC(srv),"/reading-rpc(/(\\d+)?)?",0);
         attach(new services::DataRPC(srv),"/data-rpc(/(\\d+)?)?",0);
@@ -812,7 +112,7 @@ private:
 
     /**
      * library() renders the Library view. The content is created by a call to database::getMedia(), which
-     * rebuild glb_media before it is copied onto cnt.media and sorted by title. Then the view is rendered
+     * rebuilds the media list before it is copied onto cnt.media and sorted by title. Then the view is rendered
      * and sent to the client.
      */
     void library() {
@@ -821,7 +121,7 @@ private:
             return;
         }
         services::database::getMedia();
-        cnt.media = services::glb_media;
+        cnt.media = services::getMediaList();
         std::stable_sort(cnt.media.begin(), cnt.media.end(), [](content::Item c1, content::Item c2) {
             return c1.sortTitle.compare(c2.sortTitle) < 0;
         });
@@ -841,7 +141,7 @@ private:
 
     /**
      * collection() renders the Collection view. The content is created by a call to database::getCollectionMedia(),
-     * which rebuilds glb_media before it is copied onto cnt.books and sorted by volume. Then the view is rendered
+     * which rebuilds the media list before it is copied onto cnt.books and sorted by volume. Then the view is rendered
      * and sent to the client.
      * 
      *  @param id id of the collection to be viewed
@@ -852,14 +152,14 @@ private:
             return;
         }
         // adjust what is being searched -> refresh removes the name
-        for (content::Item item : services::glb_media) {
+        for (content::Item item : services::getMediaList()) {
             if (id == item.id) {
                 cnt.collectionTitle = item.title;
                 break;
             }
         }
         services::database::getCollectionMedia(id);
-        cnt.books = services::glb_media;
+        cnt.books = services::getMediaList();
         render("collection", cnt);
     }
     
@@ -872,7 +172,7 @@ private:
             return;
         }
         std::cout << "Building import view" << std::endl; // make recursive_directory_iterator when I can handle it
-        for (const auto& entry : fs::directory_iterator(services::importPath)) {
+        for (const auto& entry : fs::directory_iterator(services::getImportPath())) {
             if (entry.is_directory()) {
                 continue;
             }

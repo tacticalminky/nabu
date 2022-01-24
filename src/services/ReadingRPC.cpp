@@ -25,6 +25,7 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <filesystem>
 
 #include "rpc.h"
+#include "services.h"
 #include "database.h"
 
 namespace fs = std::filesystem;
@@ -64,7 +65,7 @@ namespace services {
         }
         id = setId;
              
-        std::string file =  mediaPath + database::fetchFile(id);
+        std::string file =  getMediaPath() + database::fetchFile(id);
         doc = new mupdf::Document(file.c_str());
         myMatrix = mupdf::Matrix();
         myColor = mupdf::device_rgb();
@@ -83,16 +84,7 @@ namespace services {
 
         std::string returnHTML;
         for(int pageNum = firstPageLoaded; pageNum < endPage; pageNum++) {
-            std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-            fs::path image(pagesPath + filename);
-            std::cout << image.c_str() << std::endl;
-                
-            if(!fs::exists(image)) {
-                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                    .save_pixmap_as_png(image.c_str());
-            }
-            
-            returnHTML.append(generateImgTag(filename));
+            returnHTML.append(generateImg(pageNum));
         }
 
         lastPageLoaded = endPage;
@@ -139,16 +131,7 @@ namespace services {
             
         std::string returnHTML;
         for(int pageNum = lastPageLoaded; pageNum < endPage; pageNum++) {
-            std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-            fs::path image(pagesPath + filename);
-            std::cout << image.c_str() << std::endl;
-            
-            if(!fs::exists(image)) {
-                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                    .save_pixmap_as_png(image.c_str());
-            }
-
-            returnHTML.append(generateImgTag(filename));
+            returnHTML.append(generateImg(pageNum));
         }
             
         lastPageLoaded = endPage;
@@ -190,17 +173,8 @@ namespace services {
         }
             
         std::string returnHTML;
-        for(int pageNum = endPage; pageNum < firstPageLoaded; pageNum++) {
-            std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-            fs::path image(pagesPath + filename);
-            std::cout << image.c_str() << std::endl;
-                
-            if(!fs::exists(image)) {
-                doc->new_pixmap_from_page_number(pageNum, myMatrix, myColor, 0)
-                    .save_pixmap_as_png(image.c_str());
-            }
-                
-            returnHTML.append(generateImgTag(filename));
+        for(int pageNum = endPage; pageNum < firstPageLoaded; pageNum++) { 
+            returnHTML.append(generateImg(pageNum));
         }
 
         firstPageLoaded = endPage;
@@ -213,11 +187,20 @@ namespace services {
     } // loadBackwards()
 
     /**
-     * Acts as a generic <img> tag generater for the other 3 load functions
+     * generateImg() 
      * 
      * @param fileName name of the page file
      */
-    std::string ReadingRPC::generateImgTag(std::string const &filename) {
+    std::string ReadingRPC::generateImg(int const &pageNumber) {
+        std::string filename = id + "-" + std::to_string(pageNumber) + ".png";
+        fs::path image(getPagesPath() + filename);
+        std::cout << image.c_str() << std::endl;
+                
+        if(!fs::exists(image)) {
+            doc->new_pixmap_from_page_number(pageNumber, myMatrix, myColor, 0)
+                .save_pixmap_as_png(image.c_str());
+        }
+             
         return "<img class='myPages' src='/pages/" + filename + "'>";
     }
 
