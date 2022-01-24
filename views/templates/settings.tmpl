@@ -10,10 +10,12 @@ OVERRIDE
     <nav class="settings-nav">
         <a href='<% url "user" %>'>User</a>
         <a href='<% url "account" %>'>Account</a>
+        <% if hasAdmin %>
         <a href='<% url "general" %>'>General</a>
         <a href='<% url "account_management" %>'>Account Management</a>
         <a href='<% url "media_management" %>'>Media Management</a>
         <a href='<% url "meintenance" %>'>Meintenance</a>
+        <% end %>
     </nav>
     <div class="settings-content">
         <% include settings_content() %>

@@ -94,7 +94,7 @@ int main(int argc, char ** argv) {
         "username       CHAR(16)    UNIQUE NOT NULL," \
         "password_hash  CHAR(16)    UNIQUE NOT NULL," \
         "email          TEXT        UNIQUE," \
-        "privilages     CHAR(5)     NOT NULL," \
+        "privileges     CHAR(5)     NOT NULL," \
         "enabled        BOOLEAN     NOT NULL );";
     res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
@@ -112,10 +112,11 @@ int main(int argc, char ** argv) {
     std::cout << "Created progress database table successfully" << std::endl;
 
     std::cout << "Populating Database" << std::endl;
+    std::hash<std::string> str_hash;
     sql = "INSERT INTO directories (name)" \
         "VALUES ('media');" \
-        "INSERT INTO users (username, password_hash, privilages, enabled)" \
-        "VALUES ('root', '0', 'admin', 1);";
+        "INSERT INTO users (username, password_hash, privileges, enabled)" \
+        "VALUES ('root', '" + std::to_string(str_hash("admin")) + "', 'admin', 1);";
     res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));

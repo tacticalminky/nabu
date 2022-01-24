@@ -1,16 +1,29 @@
 {  
     "app" : {
         "title" : "Nabu",
-        "page_chunk_size" : {
-            "forward" : 5,
-            "backward" : 3
-        },
-        "paths" : {
-            "db" : "./testing/database/test.db",
-            "media" : "./testing",
-            "tmp" : "./testing/tmp/pages/",
-            "import" : "./testing/imports/",
-            "covers" : "./testing/covers/"
+        "settings" : {
+            "user" : {
+                "default" : {}
+            },
+            "account" : {
+                "default" : {}
+            },
+            "admin" : {
+                "page_chunk_size" : {
+                    "forward" : 5,
+                    "backward" : 3
+                },
+                "paths" : {
+                    "db" : "./testing/database/test.db",
+                    "media" : "./testing",
+                    "tmp" : "./testing/tmp/pages/",
+                    "import" : "./testing/imports/",
+                    "covers" : "./testing/covers/"
+                }
+            },
+            "account_manager" : {},
+            "media_manager" : {},
+            "meintenance" : {}
         }
     },
     "service" : {  
@@ -34,5 +47,14 @@
             { "url" : "/covers", "path" : "./testing/covers/" },
             { "url" : "/pages", "path" : "./testing/tmp/pages/" }
         ]
+    },
+    "session" : {
+        "expire" : "renew",
+        "timeout" : 604800,
+        "location" : "client",
+        "client" : {
+            "hmac" : "sha1",
+            "hmac_key" : "3891bbf7f845fd4277008a63d72640fc13bb9a31"
+        }
     } 
 }

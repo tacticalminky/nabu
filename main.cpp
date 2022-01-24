@@ -11,7 +11,7 @@ You should have received a copy of the GNU Affero General Public License along w
 /**
  * @author  Andrew Mink
  * @version alpha
- * @date    8 January 2022
+ * @date    23 January 2022
  * 
  * This file is everything, I tried the parts of the services namespace to each be in their own file,
  * but I was unabale to get it to run after compiling. I am still pretty new at making programs, so
@@ -22,20 +22,22 @@ You should have received a copy of the GNU Affero General Public License along w
  *                                          TABLE OF CONTENTS
  * page         Name
  *-----------------------------------------------------------------------------------------------------
- *  49      namespace services
- *  55          namespace database
- *  423         class ReadingRPC
- *  630         class DataRPC
- *  658         class SettingsRPC
- *  671     class WebSite
- *  866     main()
+ *  51      namespace services
+ *  58          namespace database
+ *  478         class ReadingRPC
+ *  685         class DataRPC
+ *  713         class SettingsRPC
+ *  726     class WebSite
+ *  1022    main()
  */
 
 #include <cppcms/application.h>
 #include <cppcms/applications_pool.h>
 #include <cppcms/service.h>
 #include <cppcms/url_dispatcher.h>
+#include <cppcms/http_response.h>
 #include <cppcms/rpc_json.h>
+#include <cppcms/form.h>
 
 #include <mupdf/classes.h>
 #include <sqlite3.h>
@@ -47,6 +49,7 @@ You should have received a copy of the GNU Affero General Public License along w
 namespace fs = std::filesystem;
 
 namespace services {
+    std::string mediaPath, coverPath, importPath, pagesPath;
     std::vector<content::Item> glb_media;
     
     /**
@@ -56,7 +59,7 @@ namespace services {
         sqlite3 *db;
         char *zErrMsg = 0;
         std::string docFilePath;
-        std::string transferID;
+        std::string transferVal;
         
         /**
          * Opens the database with the given filepath
@@ -88,17 +91,17 @@ namespace services {
         } // callback()
         
         /**
-         * idCallback() makes the data argument the id
+         * getCallback() gets a single value from the database and sets it to transferVal
          * 
-         * @param argv 0->id for anything 
+         * @param argv 0->any value to transfer
          */
-        static int idCallback(void* data, int argc, char **argv, char **azColName) {
+        static int getCallback(void* data, int argc, char **argv, char **azColName) {
             if (argc != 1) {
-                throw std::invalid_argument("Database query should contain 1 argument, but has: " + argc);
+                throw std::invalid_argument("Database query should contain 1 argument, but has: " + std::to_string(argc));
             }
-            transferID = std::string(argv[0]);
+            transferVal = std::string(argv[0]);
             return 0;
-        } // idCallback()
+        } // getCallback()
 
         /**
          * mediaCallback() creates a content::Item for each entry returned by the sql requests and then
@@ -108,7 +111,7 @@ namespace services {
          */
         static int mediaCallback(void* data, int argc, char **argv, char **azColName) {
             if (argc != 5) {
-                throw std::invalid_argument("Database query should contain 5 arguments, but has: " + argc);
+                throw std::invalid_argument("Database query should contain 5 arguments, but has: " + std::to_string(argc));
             }
             content::Item item;
             item.id             = std::string(argv[0]);
@@ -131,7 +134,7 @@ namespace services {
          */
         static int collectionCallback(void* data, int argc, char **argv, char **azColName) {
             if (argc != 5) {
-                throw std::invalid_argument("Database query should contain 5 arguments, but has: " + argc);
+                throw std::invalid_argument("Database query should contain 5 arguments, but has: " + std::to_string(argc));
             }
             content::Item item;
             item.id             = std::string(argv[0]);
@@ -155,7 +158,7 @@ namespace services {
          */
         static int walkDirectoriesCallback(void* data, int argc, char **argv, char **azColName) {
             if (argc != 2) {
-                throw std::invalid_argument("Database query should contain 2 arguments, but has: " + argc);
+                throw std::invalid_argument("Database query should contain 2 arguments, but has: " + std::to_string(argc));
             }
 
             if (argv[0]) {
@@ -184,7 +187,7 @@ namespace services {
          */
         static int fetchFileCallback(void* data, int argc, char **argv, char **azColName) {
             if (argc != 2) {
-                throw std::invalid_argument("Database query should contain 2 arguments, but has: " + argc);
+                throw std::invalid_argument("Database query should contain 2 arguments, but has: " + std::to_string(argc));
             }
             std::cout << "Fetching path to '" << std::string(argv[1]) << "' from the database" << std::endl;
             
@@ -265,19 +268,21 @@ namespace services {
         /**
          * getDirectoryID() grabs the id for a given directory
          * 
-         * @param name the name of the directory
+         * @param name the name of the 
+         * @return the id of the directory
          */
         std::string getDirectoryID(std::string const name) {
             std::cout << "Getting directory_id for " << name << std::endl;
+            transferVal.clear();
 
             std::string sql;
             sql = "SELECT directories.directory_id FROM directories WHERE name='" + name + "';";
-            int res = sqlite3_exec(db, sql.c_str(), idCallback, 0, &zErrMsg);
+            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
             
-            return transferID;
+            return transferVal;
         } // getDirectoryID()
 
         /**
@@ -286,9 +291,11 @@ namespace services {
          * exits, the id is grabbed
          * 
          * @param name the name of the collection
+         * @return the id of the collection
          */
         std::string getCollectionID(std::string const name) {
             std::cout << "Getting collection_id for " << name << std::endl;
+            transferVal.clear();
 
             std::string sql;
             struct sqlite3_stmt *selectstmt;
@@ -313,12 +320,12 @@ namespace services {
             sqlite3_finalize(selectstmt);
             
             sql = "SELECT collections.collection_id FROM collections WHERE title='" + name + "';";
-            res = sqlite3_exec(db, sql.c_str(), idCallback, 0, &zErrMsg);
+            res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
 
-            return transferID;
+            return transferVal;
         } // getCollectionID()
 
         /**
@@ -333,7 +340,7 @@ namespace services {
          * @param importPath path to /imports, including from config.json
          * @param mediaPath path to /media, not including from config.json
          */
-        void import(cppcms::json::value json, std::string const importPath, std::string const mediaPath) {
+        void import(cppcms::json::value json) {
             std::cout << "Importing a book to the database" << std::endl;
 
             // open document, get page count and make cover 
@@ -406,6 +413,54 @@ namespace services {
         } // import()
 
         /**
+         * validateLogin() checks to see if the given credentials are valid
+         * 
+         * @param username the username to be validated
+         * @param password the password in plain text to be validated
+         * @return weither or not the user exists and is enabled
+         */
+        bool validateLogin(std::string const username, std::string const password) {
+            std::cout << "Validating user:  " << username << std::endl;
+
+            std::string sql;
+            struct sqlite3_stmt *selectstmt;
+            std::hash<std::string> str_hash;
+            sql = "SELECT * FROM users WHERE username='" + username + "' AND password_hash='" + std::to_string(str_hash(password)) + "';";
+            int res = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
+            if (res != SQLITE_OK) {
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+            if (sqlite3_step(selectstmt) == SQLITE_ROW) {
+                std::cout << "User is valid" << std::endl;
+                // check if user is enabled -> return false
+                return true;
+            }
+            sqlite3_finalize(selectstmt);
+            std::cout << "User is disabled or doesn't exist" << std::endl;
+            return false;
+        }
+
+        /**
+         * getPermissions() takes a user and fetches the permissions for the user
+         * 
+         * @param username the username for the user
+         * @return the permission of the user
+         */
+        std::string getPermissions(std::string const username) {
+            std::cout << "Getting permissions for " << username << std::endl;
+            transferVal.clear();
+
+            std::string sql;
+            sql = "SELECT users.privileges FROM users WHERE username='" + username + "';";
+            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+
+            return transferVal;
+        }
+        
+        /**
          * close() closes the database
          */
         void close() {
@@ -435,8 +490,8 @@ namespace services {
          */
         ReadingRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
             std::cout << "Setting pageChunkSize" << std::endl;
-            pageChunkSizeForwards = settings().get<int>("app.page_chunk_size.forward");
-            pageChunkSizeBackwards = settings().get<int>("app.page_chunk_size.backward");
+            pageChunkSizeForwards = settings().get<int>("app.settings.admin.page_chunk_size.forward");
+            pageChunkSizeBackwards = settings().get<int>("app.settings.admin.page_chunk_size.backward");
             
             std::cout << "Binding reading controls" << std::endl;
             bind("loadInit",cppcms::rpc::json_method(&ReadingRPC::loadInit,this),method_role);
@@ -466,7 +521,7 @@ namespace services {
             }
             id = setId;
              
-            std::string file =  settings().get<std::string>("app.paths.media") + database::fetchFile(id);
+            std::string file =  mediaPath + database::fetchFile(id);
             doc = new mupdf::Document(file.c_str());
             myMatrix = mupdf::Matrix();
             myColor = mupdf::device_rgb();
@@ -486,7 +541,7 @@ namespace services {
             std::string returnHTML;
             for(int pageNum = firstPageLoaded; pageNum < endPage; pageNum++) {
                 std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-                fs::path image(settings().get<std::string>("app.paths.tmp") + filename);
+                fs::path image(pagesPath + filename);
                 std::cout << image.c_str() << std::endl;
                 
                 if(!fs::exists(image)) {
@@ -542,7 +597,7 @@ namespace services {
             std::string returnHTML;
             for(int pageNum = lastPageLoaded; pageNum < endPage; pageNum++) {
                 std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-                fs::path image(settings().get<std::string>("app.paths.tmp") + filename);
+                fs::path image(pagesPath + filename);
                 std::cout << image.c_str() << std::endl;
                 
                 if(!fs::exists(image)) {
@@ -594,7 +649,7 @@ namespace services {
             std::string returnHTML;
             for(int pageNum = endPage; pageNum < firstPageLoaded; pageNum++) {
                 std::string filename = id + "-" + std::to_string(pageNum) + ".png";
-                fs::path image(settings().get<std::string>("app.paths.tmp") + filename);
+                fs::path image(pagesPath + filename);
                 std::cout << image.c_str() << std::endl;
                 
                 if(!fs::exists(image)) {
@@ -642,7 +697,7 @@ namespace services {
             std::cout << "import() called" << std::endl;
             json.save(std::cout,cppcms::json::readable); // prints json
             try {
-                database::import(json, settings().get<std::string>("app.paths.import"), settings().get<std::string>("app.paths.media"));
+                database::import(json);
                 return_result("Successfully added to the database");
             } catch (std::exception const &e) {
                 std::cout << e.what() << std::endl;
@@ -674,7 +729,11 @@ public:
      * Attaches services, assigns url mapping, and then sets the root of the webpage
      */
     WebSite(cppcms::service &srv) : cppcms::application(srv) {
-        services::database::open(settings().get<std::string>("app.paths.db"));
+        services::database::open(settings().get<std::string>("app.settings.admin.paths.db"));
+        services::mediaPath = settings().get<std::string>("app.settings.admin.paths.media");
+        services::coverPath = settings().get<std::string>("app.settings.admin.paths.covers");
+        services::importPath = settings().get<std::string>("app.settings.admin.paths.import");
+        services::pagesPath = settings().get<std::string>("app.settings.admin.paths.tmp");
         
         attach(new services::ReadingRPC(srv),"/reading-rpc(/(\\d+)?)?",0);
         attach(new services::DataRPC(srv),"/data-rpc(/(\\d+)?)?",0);
@@ -716,16 +775,27 @@ public:
         dispatcher().assign("/settings/meintenance",&WebSite::meintenance,this);
         mapper().assign("meintenance","/settings/meintenance");
 
+        dispatcher().assign("/403",&WebSite::forbidden,this);
+        mapper().assign("forbidden","/403");
+
         mapper().root("");
     } // WebSite()
 
 private:
     /**
-     * Sets the sitewide title
+     * ini() is called by most views. Sets the sitewide title and redirects to the login page when no
+     * user is loged on.
+     * 
      * @param cnt any content view dirived from master
+     * @return true if user is set
      */
-    void ini(content::Master &cnt) {
+    bool ini(content::Master &cnt) {
         cnt.title = settings().get<std::string>("app.title");
+        if (!session().is_set("username")) {
+            response().set_redirect_header("/login");
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -735,7 +805,9 @@ private:
      */
     void library() {
         content::Library cnt;
-        ini(cnt);
+        if (!ini(cnt)) {
+            return;
+        }
         services::database::getMedia();
         cnt.media = services::glb_media;
         std::stable_sort(cnt.media.begin(), cnt.media.end(), [](content::Item c1, content::Item c2) {
@@ -749,7 +821,9 @@ private:
      */
     void upnext() {
         content::UpNext cnt;
-        ini(cnt);
+        if (!ini(cnt)) {
+            return; 
+        }
         render("upnext", cnt);
     }
 
@@ -762,7 +836,9 @@ private:
      */
     void collection(std::string id) {
         content::Collection cnt;
-        ini(cnt); 
+        if (!ini(cnt)) {
+            return;
+        }
         // adjust what is being searched -> refresh removes the name
         for (content::Item item : services::glb_media) {
             if (id == item.id) {
@@ -780,9 +856,11 @@ private:
      */
     void import() {
         content::Import cnt;
-        ini(cnt);
+        if (!ini(cnt)) {
+            return;
+        }
         std::cout << "Building import view" << std::endl; // make recursive_directory_iterator when I can handle it
-        for (const auto& entry : fs::directory_iterator(settings().get<std::string>("app.paths.import"))) {
+        for (const auto& entry : fs::directory_iterator(services::importPath)) {
             if (entry.is_directory()) {
                 continue;
             }
@@ -801,51 +879,128 @@ private:
     }
 
     /**
-     * The following render the Help and Login pages
+     * The following renders the Help page
      */
     void help() {
         content::Help cnt;
-        ini(cnt);
+        cnt.title = settings().get<std::string>("app.title");
         render("help", cnt);
     }
+    
+    /**
+     * login() renders the login page and hands login form submission with session creation. Also acts
+     * as a method to logout.
+     */
     void login() {
         content::Login cnt;
-        ini(cnt);
+        cnt.title = settings().get<std::string>("app.title");
+        if (request().request_method() == "POST" && session().is_set("prelogin")) {
+            cnt.login.load(context());
+            if (cnt.login.validate() && services::database::validateLogin(cnt.login.username.value(), cnt.login.password.value())) {
+                session().reset_session();
+                session().erase("prelogin");
+                session().set("username", cnt.login.username.value());
+                // grab user preferences
+                cnt.login.clear();
+                response().set_redirect_header("/");
+                return;
+            }
+        }
+        session().reset_session();
+        session().erase("username");
+        session().set("prelogin","");
         render("login", cnt);
     }
 
     /**
+     * settingsView() handles what settings are available for the user 
+     * 
+     * @param cnt any content view dirived from settings
+     * @return false if user cannot navigate to the page, and true otherwise
+     */
+    bool settingsView(content::Settings &cnt) {
+        std::cout << "Attempting to view settings" << std::endl;
+        if (!ini(cnt)) {
+            return false;
+        }
+        cnt.hasAdmin = false;
+        std::string perms = services::database::getPermissions(session()["username"]);
+        perms = "user";
+        if (perms != "user" && perms != "admin") {
+            response().set_redirect_header("/403");
+            return false;
+        }
+        if ((std::string(typeid(cnt).name()) == "N7content4UserE") || (std::string(typeid(cnt).name()) == "N7content7AccountE")) {
+            if (perms == "admin") {
+                cnt.hasAdmin = true;
+            }
+            return true;
+        }
+        if (perms != "admin") {
+            response().set_redirect_header("/403");
+            return false;
+        }
+        cnt.hasAdmin = true;
+        return true;
+    }
+
+    /**
      * The following render the various Settings views
+     * 
+     * Check privileges of session -> only show user and account unless they have admin privileges
+     * -> redirect to user if no admin privileges
      */
     void user() {
         content::User cnt;
-        ini(cnt);
+        if (!settingsView(cnt)) {
+            return;
+        }
         render("user", cnt);
     }
     void account() {
         content::Account cnt;
-        ini(cnt);
+        if (!settingsView(cnt)) {
+            return;
+        }
         render("account", cnt);
     }
     void general() {
         content::General cnt;
-        ini(cnt);
+        if (!settingsView(cnt)) {
+            return;
+        }
         render("general", cnt);
     }
     void accountManagement() {
         content::AccountManagement cnt;
-        ini(cnt);
+        if(!settingsView(cnt)) {
+            return;
+        }
         render("account_management", cnt);
     }
     void mediaManagement() {
         content::MediaManagement cnt;
-        ini(cnt);
+        if (!settingsView(cnt)) {
+            return;
+        }
         render("media_management", cnt);
     }
     void meintenance() {
         content::Meintenance cnt;
-        ini(cnt);
+        if (!settingsView(cnt)) {
+            return;
+        }
         render("meintenance", cnt);
+    }
+
+    /**
+     * forbidden() renders the 403 FORBIDDEN page
+     */
+    void forbidden() {
+        response().status(cppcms::http::response::forbidden);
+        content::Forbidden cnt;
+        cnt.title = settings().get<std::string>("app.title");
+        render("forbidden", cnt);
     }
 
     /**
@@ -855,6 +1010,7 @@ private:
         if (!dispatcher().dispatch(url)) {
             response().status(cppcms::http::response::not_found);
             content::PageNotFound cnt;
+            cnt.title = settings().get<std::string>("app.title");
             render("page_not_found", cnt);
         }
     }

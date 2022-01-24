@@ -73,11 +73,16 @@ namespace content {
         std::vector<ImportItem> imports;
     };
     struct Help : public Master {};
-    struct Login : public Master {};
+    struct Login : public Master {
+        LoginForm login;
+    };
     struct PageNotFound : public Master {};
+    struct Forbidden : public Master {};
     
     // Settings views
-    struct Settings : public Master {};
+    struct Settings : public Master {
+        bool hasAdmin;
+    };
     struct User : public Settings {};
     struct Account : public Settings {};
     struct General : public Settings {};

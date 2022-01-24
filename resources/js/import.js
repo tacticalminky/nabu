@@ -67,11 +67,11 @@ async function matchGoogleAPI(isbn, title, author, publisher, form) {
 } // searchGoogleAPI()
 
 function viewMatches(form, matches) {
-    document.getElementById("api-modal").innerHTML = "";
+    document.getElementById("api-modal-cnt").innerHTML = "";
     document.getElementById("api-modal").style.visibility = "visible";
     for (const match of matches) {
         // change to grab all authors and catagories
-        document.getElementById("api-modal").innerHTML += `
+        document.getElementById("api-modal-cnt").innerHTML += `
             <div class="potential-match">
                 <img src="${((match.volumeInfo.imageLinks) ? match.volumeInfo.imageLinks.smallThumbnail : "" )}" alt="Cover Preview">
                 <table>
@@ -117,16 +117,15 @@ function viewMatches(form, matches) {
                 </table>
             </div>
         `;
-        document.getElementById(match.id).addEventListener("click", function() { matchForm(form,match); });
+        setTimeout(() => { document.getElementById(match.id).addEventListener("click", function() { matchForm(form,match); }); }, 20);
     }
     // fetch more
 }
 
 function matchForm(form, match) {
-    console.log("Calling match");
     // newValue for all
     // newValue for new -> currently null
-    document.getElementById("api-modal").innerHTML = `
+    document.getElementById("api-modal-cnt").innerHTML = `
         <div class="match">
             <table>
                 <tr>
@@ -250,7 +249,7 @@ function newValue(formElement, val) {
 
 function closeAPIModal() {
     document.getElementById("api-modal").style.visibility = "hidden";
-    document.getElementById("api-modal").innerHTML = "";
+    document.getElementById("api-modal-cnt").innerHTML = "";
 } // closeAPIModal()
 
 // sets what to do for each form on submit
