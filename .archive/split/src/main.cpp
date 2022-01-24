@@ -42,7 +42,7 @@ public:
      */
     WebSite(cppcms::service &srv) : cppcms::application(srv) {
         services::database::open(settings().get<std::string>("app.settings.admin.paths.db"));
-        services::mediaPath = settings().get<std::string>("app.settings.admin.paths.media");
+        services::setMediaPath(settings().get<std::string>("app.settings.admin.paths.media"));
         services::coverPath = settings().get<std::string>("app.settings.admin.paths.covers");
         services::importPath = settings().get<std::string>("app.settings.admin.paths.import");
         services::pagesPath = settings().get<std::string>("app.settings.admin.paths.tmp");

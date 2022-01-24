@@ -9,7 +9,6 @@
 #include "../views/content.h"
 
 namespace services {
-    std::string mediaPath, coverPath, importPath, pagesPath;
     std::vector<content::Item> glb_media;
 
     class ReadingRPC : public cppcms::rpc::json_rpc_server {
