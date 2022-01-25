@@ -347,6 +347,11 @@ body {
     width: auto;
 }
 
+/* || LOGIN FORM */
+.login {
+    display: block;
+}
+
 /* || MOBILE DIVICES */
 @media all and (max-width: 767px) {
     

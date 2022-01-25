@@ -3,10 +3,12 @@
 <% template title() %><%= title %> :: Login<% end %>
 
 <% template page_content() %>
-    <h2>Login</h2>
-    <form class="login" method="post" action="">
-        <% form as_p login %>
-    </form>
+    <div class="login">
+        <h2>Login</h2>
+        <form class="login-form" method="post" action="">
+            <% form as_p login %>
+        </form>
+    </div>
 <% end template %>
 
 <% end view %>

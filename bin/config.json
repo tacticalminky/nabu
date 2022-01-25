@@ -14,11 +14,11 @@
                     "backward" : 3
                 },
                 "paths" : {
-                    "db" : "./build/testing/database/test.db",
-                    "media" : "./build/testing",
-                    "tmp" : "./build/testing/tmp/pages/",
-                    "import" : "./build/testing/imports/",
-                    "covers" : "./build/testing/covers/"
+                    "db" : "./bin/testing/database/test.db",
+                    "media" : "./bin/testing",
+                    "tmp" : "./bin/testing/tmp/pages/",
+                    "import" : "./bin/testing/imports/",
+                    "covers" : "./bin/testing/covers/"
                 }
             },
             "account_manager" : {},
@@ -44,8 +44,8 @@
         "listing" : true,
         "document_root" : "./build/resources",
         "alias" : [
-            { "url" : "/covers", "path" : "./build/testing/covers/" },
-            { "url" : "/pages", "path" : "./build/testing/tmp/pages/" }
+            { "url" : "/covers", "path" : "./bin/testing/covers/" },
+            { "url" : "/pages", "path" : "./bin/testing/tmp/pages/" }
         ]
     },
     "session" : {

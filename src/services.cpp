@@ -14,7 +14,7 @@ You should have received a copy of the GNU Affero General Public License along w
  */
 
 #include <string>
-#include "../views/content.h"
+#include "content.h"
 
 #include "services.h"
 

@@ -21,7 +21,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 #include "database.h"
 #include "services.h"
-#include "../views/content.h"
+#include "content.h"
 
 namespace fs = std::filesystem;
 

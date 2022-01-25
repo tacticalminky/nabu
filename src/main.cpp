@@ -11,9 +11,9 @@ You should have received a copy of the GNU Affero General Public License along w
 /**
  * @author  Andrew Mink
  * @version alpha
- * @date    23 January 2022
+ * @date    25 January 2022
  * 
- * WebSite is the main application that the other applications attach to and run from. WebSite handles
+ * Website is the main application that the other applications attach to and run from. Website handles
  * the construction of the website and url dispatching.
  */
 
@@ -22,26 +22,23 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <cppcms/service.h>
 #include <cppcms/url_dispatcher.h>
 #include <cppcms/http_response.h>
-#include <cppcms/rpc_json.h>
 #include <cppcms/form.h>
 
-#include <mupdf/classes.h>
-#include <sqlite3.h>
 #include <filesystem>
 
-#include "views/content.h"
-#include "services/services.h"
-#include "services/rpc.h"
-#include "services/database.h"
+#include "content.h"
+#include "services.h"
+#include "rpc.h"
+#include "database.h"
 
 namespace fs = std::filesystem;
 
-class WebSite : public cppcms::application {
+class Website : public cppcms::application {
 public:
     /**
      * Attaches services, assigns url mapping, and then sets the root of the webpage
      */
-    WebSite(cppcms::service &srv) : cppcms::application(srv) {
+    Website(cppcms::service &srv) : cppcms::application(srv) {
         services::database::open(settings().get<std::string>("app.settings.admin.paths.db"));
         services::setMediaPath(settings().get<std::string>("app.settings.admin.paths.media"));
         services::setCoverPath(settings().get<std::string>("app.settings.admin.paths.covers"));
@@ -51,47 +48,47 @@ public:
         attach(new services::ReadingRPC(srv),"/reading-rpc(/(\\d+)?)?",0);
         attach(new services::DataRPC(srv),"/data-rpc(/(\\d+)?)?",0);
 
-        dispatcher().assign("/",&WebSite::library,this);
+        dispatcher().assign("/",&Website::library,this);
         mapper().assign("library","/");
         
-        dispatcher().assign("/upnext",&WebSite::upnext,this);
+        dispatcher().assign("/upnext",&Website::upnext,this);
         mapper().assign("upnext","/upnext");
         
-        dispatcher().assign("/collection/(\\w+)",&WebSite::collection,this,1);
+        dispatcher().assign("/collection/(\\w+)",&Website::collection,this,1);
         mapper().assign("collection","/collection/{1}");
 
-        dispatcher().assign("/import",&WebSite::import,this);
+        dispatcher().assign("/import",&Website::import,this);
         mapper().assign("import","/import");
         
-        dispatcher().assign("/help",&WebSite::help,this);
+        dispatcher().assign("/help",&Website::help,this);
         mapper().assign("help","/help");
         
-        dispatcher().assign("/login",&WebSite::login,this);
+        dispatcher().assign("/login",&Website::login,this);
         mapper().assign("login","/login");
         
-        dispatcher().assign("/settings/user",&WebSite::user,this);
+        dispatcher().assign("/settings/user",&Website::user,this);
         mapper().assign("user","/settings/user");
         
-        dispatcher().assign("/settings/account",&WebSite::account,this);
+        dispatcher().assign("/settings/account",&Website::account,this);
         mapper().assign("account","/settings/account");
         
-        dispatcher().assign("/settings/general",&WebSite::general,this);
+        dispatcher().assign("/settings/general",&Website::general,this);
         mapper().assign("general","/settings/general");
         
-        dispatcher().assign("/settings/acount-management",&WebSite::accountManagement,this);
+        dispatcher().assign("/settings/acount-management",&Website::accountManagement,this);
         mapper().assign("account_management","/settings/acount-management");
         
-        dispatcher().assign("/settings/media-management",&WebSite::mediaManagement,this);
+        dispatcher().assign("/settings/media-management",&Website::mediaManagement,this);
         mapper().assign("media_management","/settings/media-management");
         
-        dispatcher().assign("/settings/meintenance",&WebSite::meintenance,this);
+        dispatcher().assign("/settings/meintenance",&Website::meintenance,this);
         mapper().assign("meintenance","/settings/meintenance");
 
-        dispatcher().assign("/403",&WebSite::forbidden,this);
+        dispatcher().assign("/403",&Website::forbidden,this);
         mapper().assign("forbidden","/403");
 
         mapper().root("");
-    } // WebSite()
+    } // Website()
 
 private:
     /**
@@ -328,15 +325,15 @@ private:
             render("page_not_found", cnt);
         }
     }
-};
+}; // class Website
 
 /**
- * Starts and runs the application
+ * Starts and runs the Website application
  */
 int main(int argc, char ** argv) {
     try {
         cppcms::service srv(argc,argv);
-        srv.applications_pool().mount(cppcms::create_pool<WebSite>());
+        srv.applications_pool().mount(cppcms::create_pool<Website>());
         srv.run();
     } catch(std::exception const &e) {
         std::cerr << e.what() << std::endl;

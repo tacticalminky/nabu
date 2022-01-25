@@ -2,9 +2,10 @@
 #define SERVICES_H
 
 #include <string>
-#include "../views/content.h"
+#include "content.h"
 
-namespace services {    
+namespace services {
+
     std::string getMediaPath();
     std::string getCoverPath();
     std::string getImportPath();
