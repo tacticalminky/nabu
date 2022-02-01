@@ -6,6 +6,9 @@
 
 namespace services {
 
+    void setLogfile(std::string const &file);
+    void Log(std::string message);
+
     std::string getMediaPath();
     std::string getCoverPath();
     std::string getImportPath();

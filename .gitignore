@@ -4,7 +4,7 @@ bin/testing/*
 ### Build files ###
 bin/exec
 bin/init
-bin/debug_exec
+bin/debug
 src/views/myskin.cpp
 
 ### VSCode files ###

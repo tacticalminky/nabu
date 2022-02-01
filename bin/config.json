@@ -13,6 +13,7 @@
                     "forward" : 5,
                     "backward" : 3
                 },
+                "logfile" : "./bin/testing/nabu.log",
                 "paths" : {
                     "db" : "./bin/testing/database/test.db",
                     "media" : "./bin/testing",
@@ -42,7 +43,7 @@
     "file_server" : {
         "enable" : true,
         "listing" : true,
-        "document_root" : "./build/resources",
+        "document_root" : "./bin/resources",
         "alias" : [
             { "url" : "/covers", "path" : "./bin/testing/covers/" },
             { "url" : "/pages", "path" : "./bin/testing/tmp/pages/" }

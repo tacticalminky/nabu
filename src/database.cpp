@@ -46,7 +46,7 @@ namespace services {
             if (res) {
                 throw std::invalid_argument("Database failed to open: " + std::string(sqlite3_errmsg(db)));
             }
-            std::cout << "Database opened" << std::endl;
+            Log("Database opened");
         } // open()
 
         /**
@@ -58,7 +58,7 @@ namespace services {
          * @param argv array of strings representing fields in the row
          * @param azColName array of strings representing column names
          */
-        static int callback(void* data, int argc, char **argv, char **azColName) {
+        static int callback(void* /* data */, int /* argc */, char ** /* argv */, char ** /* azColName */) {
             return 0;
         } // callback()
         
@@ -67,8 +67,9 @@ namespace services {
          * 
          * @param argv 0->any value to transfer
          */
-        static int getCallback(void* data, int argc, char **argv, char **azColName) {
+        static int getCallback(void* /* data */, int argc, char **argv, char ** /* azColName */) {
             if (argc != 1) {
+                Log("getCallback() `database query should contain 1 argument, but has: " + std::to_string(argc));
                 throw std::invalid_argument("Database query should contain 1 argument, but has: " + std::to_string(argc));
             }
             transferVal = std::string(argv[0]);
@@ -81,8 +82,9 @@ namespace services {
          * 
          * @param argv 0->media_id, 1->title, 2->sort_title, 3->volume_num, 4->issue_num
          */
-        static int mediaCallback(void* data, int argc, char **argv, char **azColName) {
+        static int mediaCallback(void* /* data */, int argc, char **argv, char ** /* azColName */) {
             if (argc != 5) {
+                Log("mediaCallback() database query should contain 5 arguments, but has: " + std::to_string(argc));
                 throw std::invalid_argument("Database query should contain 5 arguments, but has: " + std::to_string(argc));
             }
             content::Item item;
@@ -104,8 +106,9 @@ namespace services {
          * 
          * @param argv 0->collection_id, 1->title, 2->sort_title, 3->number_vol, 4->number_iss
          */
-        static int collectionCallback(void* data, int argc, char **argv, char **azColName) {
+        static int collectionCallback(void* /* data */, int argc, char **argv, char ** /* azColName */) {
             if (argc != 5) {
+                Log("collectionCallback() database query should contain 5 arguments, but has: " + std::to_string(argc));
                 throw std::invalid_argument("Database query should contain 5 arguments, but has: " + std::to_string(argc));
             }
             content::Item item;
@@ -128,25 +131,24 @@ namespace services {
          *
          * @param argv 0->parent_id, 1->name
          */
-        static int walkDirectoriesCallback(void* data, int argc, char **argv, char **azColName) {
+        static int walkDirectoriesCallback(void* /* data */, int argc, char **argv, char ** /* azColName */) {
             if (argc != 2) {
+                Log("walkDirectoriesCallback() database query should contain 2 arguments, but has: " + std::to_string(argc));
                 throw std::invalid_argument("Database query should contain 2 arguments, but has: " + std::to_string(argc));
             }
 
             if (argv[0]) {
-                std::cout << "Walking past " << std::string(argv[1]) << std::endl;
                 std::string sql;
                 sql = "SELECT directories.parent_id, directories.name FROM directories WHERE directory_id =" + std::string(argv[0]) + ";";
-                int res = sqlite3_exec(db, sql.c_str(), walkDirectoriesCallback, data, &zErrMsg);
+                int res = sqlite3_exec(db, sql.c_str(), walkDirectoriesCallback, 0, &zErrMsg);
                 if (res != SQLITE_OK) {
+                    Log("SQL error: \n" + std::string(zErrMsg));
                     throw std::runtime_error("SQL error:\n" + std::string(zErrMsg));
                 }
             }
-            std::cout << "Currently at " << std::string(argv[1]) << std::endl;
             docFilePath.append(argv[1]);
             docFilePath.append("/");
 
-            std::cout << docFilePath << std::endl;
             return 0;
         } // walkDirectoriesCallback()
 
@@ -157,22 +159,23 @@ namespace services {
          * 
          * @param argv 0->file_loc, 1->filename
          */
-        static int fetchFileCallback(void* data, int argc, char **argv, char **azColName) {
+        static int fetchFileCallback(void* /* data */, int argc, char **argv, char ** /* azColName */) {
             if (argc != 2) {
+                Log("fetchFileCallback() database query should contain 2 arguments, but has: " + std::to_string(argc));
                 throw std::invalid_argument("Database query should contain 2 arguments, but has: " + std::to_string(argc));
             }
             std::cout << "Fetching path to '" << std::string(argv[1]) << "' from the database" << std::endl;
             
             std::string sql;
             sql = "SELECT directories.parent_id, directories.name FROM directories WHERE directory_id =" + std::string(argv[0]) + ";";
-            int res = sqlite3_exec(db, sql.c_str(), walkDirectoriesCallback, data, &zErrMsg);
+            int res = sqlite3_exec(db, sql.c_str(), walkDirectoriesCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error:\n" + std::string(zErrMsg));
             }
 
             docFilePath.append(argv[1]);
 
-            std::cout << docFilePath << std::endl;
             return 0;
         } // fetchFileCallback()
 
@@ -182,19 +185,21 @@ namespace services {
          * is sent to collectionCallback() to handle the retrieved data and repopulate glb_media.
          */
         void getMedia() {
-            std::cout << "Getting books from database not in a collection" << std::endl;
+            Log("Getting books from database not in a collection");
             clearMediaList();
             std::string sql;
             sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id IS NULL;";
             int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
             
-            std::cout << "Getting collections" << std::endl;
+            Log("Getting collections");
             sql = "SELECT collections.collection_id, collections.title, collections.sort_title, collections.number_vol, collections.number_iss FROM collections;";
             res = sqlite3_exec(db, sql.c_str(), collectionCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
         } // getMedia()
@@ -207,12 +212,13 @@ namespace services {
          * @param id the id of the collection where the requested books belong
          */
         void getCollectionMedia(std::string const &collection_id) {
-            std::cout << "Getting books in the collection" << std::endl;
+            Log("Getting books in a collection");
             clearMediaList();
             std::string sql;
             sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id=" + collection_id + " ORDER BY media.issue_num DESC;";
             int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
         } // getCollectionMedia()
@@ -225,12 +231,13 @@ namespace services {
          * @return the finilaized docFilePath
          */
         std::string fetchFile(std::string const &media_id) {
-            std::cout << "Getting the file for the book" << std::endl;
+            Log("Getting the file for the book");
             docFilePath = "/";
             std::string sql;
             sql = "SELECT media.file_loc, media.filename FROM media WHERE media_id=" + media_id + ";";
             int res = sqlite3_exec(db, sql.c_str(), fetchFileCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
 
@@ -244,13 +251,14 @@ namespace services {
          * @return the id of the directory
          */
         std::string getDirectoryID(std::string const &name) {
-            std::cout << "Getting directory_id for " << name << std::endl;
+            Log("Getting directory_id for " + name);
             transferVal.clear();
 
             std::string sql;
             sql = "SELECT directories.directory_id FROM directories WHERE name='" + name + "';";
             int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
             
@@ -266,7 +274,7 @@ namespace services {
          * @return the id of the collection
          */
         std::string getCollectionID(std::string const &name) {
-            std::cout << "Getting collection_id for " << name << std::endl;
+            Log("Getting collection_id for " + name);
             transferVal.clear();
 
             std::string sql;
@@ -274,10 +282,11 @@ namespace services {
             sql = "SELECT * FROM collections WHERE title='" + name + "';";
             int res = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
             if (sqlite3_step(selectstmt) != SQLITE_ROW) {
-                std::cout << "Making collection for " << name << std::endl;
+                Log("Making collection for " + name);
                 // handle leading the for sort_title
                 std::hash<std::string> str_hash;
                 int hashVal = str_hash(name);
@@ -285,6 +294,7 @@ namespace services {
                     "VALUES (" + std::to_string(hashVal) + ", '" + name + "', '" + name + "');";
                 res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
                 if (res != SQLITE_OK) {
+                    Log("SQL error: \n" + std::string(zErrMsg));
                     throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
                 }
                 return std::to_string(hashVal);
@@ -294,6 +304,7 @@ namespace services {
             sql = "SELECT collections.collection_id FROM collections WHERE title='" + name + "';";
             res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
 
@@ -307,13 +318,14 @@ namespace services {
          * @return the id of the book
          */
         std::string getMediaID(std::string const &filename) {
-            std::cout << "Getting media_id for " << filename << std::endl;
+            Log("Getting media_id for " + filename);
             transferVal.clear();
 
             std::string sql;
             sql = "SELECT media.media_id FROM media WHERE filename='" + filename + "';";
             int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
             
@@ -328,11 +340,12 @@ namespace services {
          * @param json contains the information about the book in json format
          */
         void import(cppcms::json::value json) {
-            std::cout << "Importing a book to the database" << std::endl;
+            Log("Importing a book to the database");
 
             // open document, get page count and make cover 
             fs::path oldFilePath(getImportPath() + json.get<std::string>("file")); // fix for recursive files
             if (!fs::exists(oldFilePath)) {
+                Log("Can't find file: " + oldFilePath.string());
                 throw std::runtime_error("Can't find file: " + oldFilePath.string());
             }
 
@@ -355,7 +368,6 @@ namespace services {
             fs::path prevPart;
             for (const auto& part : newDirPathRelativeToMedia) {
                 newPath.append(part.c_str());
-                std::cout << newPath.c_str() << std::endl;
                 if (fs::create_directory(newPath)) {
                     // directory was created -> add to database
                     std::string sqlTMP;
@@ -363,17 +375,18 @@ namespace services {
                         "VALUES (" + getDirectoryID(prevPart.c_str()) + ",'" + part.c_str() + "');";
                     int resTMP = sqlite3_exec(db, sqlTMP.c_str(), callback, 0, &zErrMsg);
                     if (resTMP != SQLITE_OK ) {
+                        Log("SQL error: \n" + std::string(zErrMsg));
                         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
                     }
                 }
                 prevPart = part;
             }
             newPath.append(newFilename);
-            std::cout << "Moving: " << newFilename << std::endl;
+            Log("Moving: " + newFilename);
             fs::rename(oldFilePath, newPath);
 
             // Insert the book into the media database with all the new infomation
-            std::cout << "Adding to database" << std::endl;
+            Log("Adding to database");
             std::string sql;
             sql = "INSERT INTO media (title, sort_title, volume_num, issue_num, isbn, total_pages, date, author, illistrator, publisher, genere, type, collection_id, filename, file_loc)" \
                 "VALUES ('"
@@ -395,13 +408,13 @@ namespace services {
                 "');";
             int res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
 
             // create the cover image
             std::string cover = getCoverPath() + getMediaID(newFilename) + ".png";
-            std::cout << "Creating image" << std::endl
-                << "    " << cover << std::endl;
+            Log("Creating cover image: " + cover);
             mupdf::Matrix ctm = mupdf::Matrix();
             doc->new_pixmap_from_page_number(0, ctm, mupdf::device_rgb(), 0)
                 .save_pixmap_as_png(cover.c_str());
@@ -415,7 +428,7 @@ namespace services {
          * @return weither or not the user exists and is enabled
          */
         bool validateLogin(std::string const &username, std::string const &password) {
-            std::cout << "Validating user:  " << username << std::endl;
+            Log("Validating user:  " + username);
 
             std::string sql;
             struct sqlite3_stmt *selectstmt;
@@ -423,15 +436,16 @@ namespace services {
             sql = "SELECT * FROM users WHERE username='" + username + "' AND password_hash='" + std::to_string(str_hash(password)) + "';";
             int res = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
             if (sqlite3_step(selectstmt) == SQLITE_ROW) {
-                std::cout << "User is valid" << std::endl;
+                Log("User is valid");
                 // check if user is enabled -> return false
                 return true;
             }
             sqlite3_finalize(selectstmt);
-            std::cout << "User is disabled or doesn't exist" << std::endl;
+            Log("User is disabled or doesn't exist");
             return false;
         }
 
@@ -442,13 +456,14 @@ namespace services {
          * @return the permission of the user
          */
         std::string getPermissions(std::string const &username) {
-            std::cout << "Getting permissions for " << username << std::endl;
+            Log("Getting permissions for " + username);
             transferVal.clear();
 
             std::string sql;
             sql = "SELECT users.privileges FROM users WHERE username='" + username + "';";
             int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
 
@@ -460,7 +475,7 @@ namespace services {
          */
         void close() {
             sqlite3_close(db);
-            std::cout << "Closed database" << std::endl;
+            Log("Closed database");
         } // close()
     
     } // namespace database

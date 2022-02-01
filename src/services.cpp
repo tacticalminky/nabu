@@ -14,11 +14,48 @@ You should have received a copy of the GNU Affero General Public License along w
  */
 
 #include <string>
-#include "content.h"
+#include <fstream>
+#include <ctime>
+#include <iomanip>
 
 #include "services.h"
+#include "content.h"
 
 namespace services {
+
+    std::string logfile;
+    void setLogfile(std::string const &file) {
+        logfile = file;
+        std::string onOpen = "\n"\
+            "################################################################################\n"\
+            "#                                                                              #\n"\
+            "#           ###      ##         ##         ########      ##       ##           #\n"\
+            "#           ####     ##        ####        ##     ##     ##       ##           #\n"\
+            "#           ## ##    ##       ##  ##       ##     ##     ##       ##           #\n"\
+            "#           ##  ##   ##      ##    ##      ########      ##       ##           #\n"\
+            "#           ##   ##  ##     ##########     ##     ###    ##       ##           #\n"\
+            "#           ##    ## ##    ##        ##    ##       ##   ##       ##           #\n"\
+            "#           ##     ####    ##        ##    ##      ##    ##       ##           #\n"\
+            "#           ##      ###   ##          ##   #########      #########            #\n"\
+            "#                                                                              #\n"\
+            "#                             The eReader for you                              #\n"\
+            "#                                                                              #\n"\
+            "################################################################################\n";
+
+        Log(onOpen);
+    }
+    void Log(std::string message) {
+        if (logfile.empty()) {
+            throw std::runtime_error("logfile has not been set yet");
+        }
+        std::ofstream ofs { logfile, std::ofstream::app };
+        if (!ofs.is_open()) {
+            throw std::invalid_argument(message + " is not a valid file");
+        }
+        time_t now = std::time(nullptr);
+        ofs << std::put_time(localtime(&now), "%F_%T") << ": " << message << std::endl;
+        ofs.close();
+    }
     
     std::string mediaPath;
     std::string getMediaPath() {

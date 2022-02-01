@@ -36,6 +36,8 @@ namespace services {
      * Get the page chunk size from config.json and bind the functions to the applicaion
      */
     ReadingRPC::ReadingRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
+        Log("Binding reading controls");
+        
         pageChunkSizeForwards = settings().get<int>("app.settings.admin.page_chunk_size.forward");
         pageChunkSizeBackwards = settings().get<int>("app.settings.admin.page_chunk_size.backward");
             
@@ -71,7 +73,7 @@ namespace services {
         myColor = mupdf::device_rgb();
         pageCount = doc->count_pages(); // check against database and throw error and drop doc if diffrent
                 
-        std::cout << "Page Count: " << pageCount << std::endl << "FilePath: " << file.c_str() << std::endl;
+        Log("Page Count: " + std::to_string(pageCount) + "\nFilePath: " + file.c_str());
 
         currentPage = 0; // grab from database make sure between zero and last page => if null or last page make 0
         firstPageLoaded = currentPage;
@@ -187,14 +189,17 @@ namespace services {
     } // loadBackwards()
 
     /**
-     * generateImg() 
+     * generateImg() generates the page located at the pageNumber into an image
      * 
      * @param fileName name of the page file
      */
     std::string ReadingRPC::generateImg(int const &pageNumber) {
+        if (pageNumber >= pageCount) {
+            throw std::invalid_argument("Page " + std::to_string(pageNumber) + " is out of bounds for the book");
+        }
         std::string filename = id + "-" + std::to_string(pageNumber) + ".png";
         fs::path image(getPagesPath() + filename);
-        std::cout << image.c_str() << std::endl;
+        Log("Creating image from page: " + image.string());
                 
         if(!fs::exists(image)) {
             doc->new_pixmap_from_page_number(pageNumber, myMatrix, myColor, 0)

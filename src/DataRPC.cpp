@@ -19,26 +19,27 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <cppcms/rpc_json.h>
 
 #include "rpc.h"
+#include "services.h"
 #include "database.h"
 
 namespace services {
 
     DataRPC::DataRPC(cppcms::service &srv) : cppcms::rpc::json_rpc_server(srv) {
-        std::cout << "Binding data controls" << std::endl;
+        Log("Binding data controls");
         bind("import",cppcms::rpc::json_method(&DataRPC::import,this),method_role);
     }
 
     /**
-     * import() 
+     * import() takes in the json of an item to be imported and then calls the database to import it 
      */
     void DataRPC::import(cppcms::json::value json) {
-        std::cout << "import() called" << std::endl;
-        json.save(std::cout,cppcms::json::readable); // prints json
+        Log("Importing a new book");
+        json.save(std::cout,cppcms::json::readable); // prints json to cout
         try {
             database::import(json);
             return_result("Successfully added to the database");
         } catch (std::exception const &e) {
-            std::cout << e.what() << std::endl;
+            Log(e.what());
             return_error("Error: " + std::string(e.what()));
             return;
         }

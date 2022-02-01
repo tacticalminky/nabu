@@ -1,39 +1,39 @@
 CXX = clang++
-CXXFLAGS = -std=c++20 -Wall -Werror
+CXXFLAGS = -std=c++20 -Wall -Wextra -Werror -pedantic
 LIBS = -Iinclude -Llib -lcppcms -lbooster -lmupdfcpp -lsqlite3
 
-_HEADERS = content.h rpc.h database.h services.h
-HEADERS = $(patsubst %,include/%,$(_HEADERS))
-
 SKIN = src/views/myskin.cpp
-_SRC = services.cpp database.cpp ReadingRPC.cpp DataRPC.cpp
+_SRC = Website.cpp services.cpp database.cpp ReadingRPC.cpp DataRPC.cpp
 SRC = $(SKIN) $(patsubst %,src/%,$(_SRC))
 
 _TEMPLATES = master.tmpl library.tmpl upnext.tmpl collection.tmpl import.tmpl help.tmpl login.tmpl page_not_found.tmpl forbidden.tmpl settings.tmpl user.tmpl account.tmpl general.tmpl account_management.tmpl media_management.tmpl meintenance.tmpl
 TEMPLATES = $(patsubst %,src/views/templates/%,$(_TEMPLATES))
 
-all: website
+exec: bin/exec
 
-website: src/main.cpp $(SKIN) $(HEADERS)
-	$(CXX) $(CXXFLAGS) $< $(SRC) -o bin/exec ${LIBS}
+bin/exec: src/main.cpp $(SRC)
+	$(CXX) $(CXXFLAGS) $^ -o $@ ${LIBS}
 
 $(SKIN): ${TEMPLATES}
-	cppcms_tmpl_cc ${TEMPLATES} -o $(SKIN)
+	cppcms_tmpl_cc $^ -o $@
 
-run: website bin/config.json
-	./bin/exec -c bin/config.json
+run: bin/exec bin/config.json
+	$< -c bin/config.json
 
-debug_build: src/main.cpp $(RES) $(HEADERS)
-	$(CXX) $(CXXFLAGS) -g -O0 $< $(RES) -o bin/debug_exec ${LIBS}
+bin/init: src/initialize.cpp
+	$(CXX) $(CXXFLAGS) $< -o $@ -lsqlite3
 
-debug: debug_build config.josn
-	valgrind --leak-check=yes ./bin/debug_exec -c ./bin/config.json
+init: bin/init
+	$<
 
-init_build: src/initialize.cpp
-	$(CXX) $(CXXFLAGS) $< -o bin/init -lsqlite3
+bin/debug: src/main.cpp $(SRC)
+	$(CXX) $(CXXFLAGS) -g -O0 $^ -o $@ ${LIBS}
 
-init: init_build
-	./bin/init
+debug: bin/debug config.josn
+	valgrind --leak-check=yes $< -c ./bin/config.json
 
 clean:
-	rm -fr ./bin/exec ./bin/init $(SKIN) ./bin/testing/tmp/pages/* cppcms_rundir
+	rm -f bin/exec bin/init bin/debug $(SKIN) ./bin/testing/tmp/pages/* cppcms_rundir
+
+.DEFAULT_GOAL := exec
+.PHONEY := run debug init clean

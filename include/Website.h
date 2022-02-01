@@ -8,7 +8,7 @@
 
 class Website : public cppcms::application {
 public:
-    Website(cppcms::service &srv) : cppcms::application(srv);
+    Website(cppcms::service &srv);
 
 private:
     bool ini(content::Master &cnt);

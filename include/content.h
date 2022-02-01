@@ -3,7 +3,8 @@
 
 #include <cppcms/view.h>
 
-#include "items.h"
+#include "item.h"
+#include "import_item.h"
 #include "login_form.h"
 
 namespace content {
