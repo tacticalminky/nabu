@@ -18,7 +18,8 @@ namespace content {
             password.non_empty();
             add(password);
 
-            submit.message("Login");
+            submit.value("Login");
+            submit.id("submit");
             add(submit);
         }
     };

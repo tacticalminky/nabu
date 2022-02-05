@@ -11,6 +11,8 @@ namespace services {
         void getMedia();
         void getCollectionMedia(std::string const &collection_id);
         std::string fetchFile(std::string const &media_id);
+        bool bookExists(std::string const &media_id);
+        int getProgress(std::string const &username, std::string const &media_id);
         void import(cppcms::json::value json);
         bool validateLogin(std::string const &username, std::string const &password);
         std::string getPermissions(std::string const &username);

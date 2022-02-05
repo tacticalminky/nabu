@@ -61,7 +61,8 @@ namespace services {
      * @param setId id of the book that is to be viewed
      */
     void ReadingRPC::loadInit(std::string const &setId) {
-        if (false) { // check id validity
+        if (!database::bookExists(setId)) {
+            Log("No book exits with id: " + setId);
             return_error("Given id is not valid");
             return;
         }
@@ -70,12 +71,14 @@ namespace services {
         std::string file =  getMediaPath() + database::fetchFile(id);
         doc = new mupdf::Document(file.c_str());
         myMatrix = mupdf::Matrix();
+        float zoom = getZoom();
+        myMatrix.scale(zoom / 100, zoom / 100);
         myColor = mupdf::device_rgb();
-        pageCount = doc->count_pages(); // check against database and throw error and drop doc if diffrent
+        pageCount = doc->count_pages();
                 
         Log("Page Count: " + std::to_string(pageCount) + "\nFilePath: " + file.c_str());
 
-        currentPage = 0; // grab from database make sure between zero and last page => if null or last page make 0
+        currentPage = database::getProgress(session()["username"], id);
         firstPageLoaded = currentPage;
         int endPage;
         if (firstPageLoaded + pageChunkSizeForwards < pageCount) {

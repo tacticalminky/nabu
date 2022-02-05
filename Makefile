@@ -12,7 +12,7 @@ TEMPLATES = $(patsubst %,src/views/templates/%,$(_TEMPLATES))
 exec: bin/exec
 
 bin/exec: src/main.cpp $(SRC)
-	$(CXX) $(CXXFLAGS) $^ -o $@ ${LIBS}
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(SKIN): ${TEMPLATES}
 	cppcms_tmpl_cc $^ -o $@
@@ -27,7 +27,7 @@ init: bin/init
 	$<
 
 bin/debug: src/main.cpp $(SRC)
-	$(CXX) $(CXXFLAGS) -g -O0 $^ -o $@ ${LIBS}
+	$(CXX) $(CXXFLAGS) -g -O0 $^ -o $@ $(LIBS)
 
 debug: bin/debug config.josn
 	valgrind --leak-check=yes $< -c ./bin/config.json

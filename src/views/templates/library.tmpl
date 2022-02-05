@@ -7,6 +7,7 @@
     <% item %>
         <% if item.isCollection %>
         <div class="media-item">
+            <p style="display: none;"><%= item.title %></p>
             <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/vagabond-v01.jpg' alt='<%= item.title %>' loading="lazy"></a>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
@@ -14,6 +15,7 @@
         </div>
         <% else %>
         <div class="media-item">
+            <p style="display: none;"><%= item.title %></p>
             <img class="hover-shadow" src='/covers/<%= item.id %>.png' alt='<%= item.title %>' loading="lazy" onclick='openModal();loadInit("<%= item.id %>")'>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
@@ -26,11 +28,20 @@
 
 <% template page_content() %>
     <nav class="library-nav">
-        <a href="#view-select">View: All</a>
-        <div style="flex-grow: 2;"></div>
-        <a href='<% url "/upnext" %>'>Up Next</a>
-        <a href='<% url "/library" %>'>Library</a>
-        <div style="flex-grow: 2.5;"></div>
+        <div class="nav-left">
+            <a href="#view-select">View: All</a>
+            <div class="search-bar">
+                <input id="search-bar" type="text" placeholder="Search" onInput="updateSearch(this.value)">
+                <i class="fas fa-search" onclick="search()"></i>
+            </div>
+        </div>
+        <div class="nav-mid">
+            <div class="nav-mid-content">
+                <a href='<% url "/upnext" %>'>Up Next</a>
+                <a href='<% url "/library" %>'>Library</a>
+            </div>
+        </div>
+        <div class="nav-right"></div>
     </nav>
     <div id="library-content" class="library-content"><% include library_content() %></div>
     <div id="modal" class="modal">
@@ -42,6 +53,7 @@
         </div>
     </div>
     <script src="/resources/js/readControls.js"></script>
+    <script src="/resources/js/search.js"></script>
 <% end template %>
 
 <% end view %>

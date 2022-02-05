@@ -164,7 +164,7 @@ namespace services {
                 Log("fetchFileCallback() database query should contain 2 arguments, but has: " + std::to_string(argc));
                 throw std::invalid_argument("Database query should contain 2 arguments, but has: " + std::to_string(argc));
             }
-            std::cout << "Fetching path to '" << std::string(argv[1]) << "' from the database" << std::endl;
+            Log("Fetching path to '" + std::string(argv[1]) + "' from the database");
             
             std::string sql;
             sql = "SELECT directories.parent_id, directories.name FROM directories WHERE directory_id =" + std::string(argv[0]) + ";";
@@ -175,7 +175,6 @@ namespace services {
             }
 
             docFilePath.append(argv[1]);
-
             return 0;
         } // fetchFileCallback()
 
@@ -212,7 +211,7 @@ namespace services {
          * @param id the id of the collection where the requested books belong
          */
         void getCollectionMedia(std::string const &collection_id) {
-            Log("Getting books in a collection");
+            Log("Getting books in the collection with id: " + collection_id);
             clearMediaList();
             std::string sql;
             sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id=" + collection_id + " ORDER BY media.issue_num DESC;";
@@ -231,7 +230,7 @@ namespace services {
          * @return the finilaized docFilePath
          */
         std::string fetchFile(std::string const &media_id) {
-            Log("Getting the file for the book");
+            Log("Getting the file for the book with id: " + media_id);
             docFilePath = "/";
             std::string sql;
             sql = "SELECT media.file_loc, media.filename FROM media WHERE media_id=" + media_id + ";";
@@ -331,7 +330,57 @@ namespace services {
             
             return transferVal;
         }
-        
+
+        /**
+         * bookExists() checks the inputed id with the database
+         * 
+         * @param media_id the id to be checked
+         * @return if the book was found or not
+         */
+        bool bookExists(std::string const &media_id) {
+            Log("Checking if book exists with id: " + media_id);
+            std::string sql;
+            struct sqlite3_stmt *selectstmt;
+            sql = "SELECT * FROM media WHERE media_id='" + media_id + "';";
+            int res = sqlite3_prepare_v2(db, sql.c_str(), -1, &selectstmt, NULL);
+            if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+            if (sqlite3_step(selectstmt) != SQLITE_ROW) {
+                return false;
+            }
+            sqlite3_finalize(selectstmt);
+
+            return true;
+        }
+
+        /**
+         * getProgress() grabs the progress of the user for a book
+         * 
+         * @param username the name of the user
+         * @param media_id id of the book
+         * @return the progress
+         */
+        int getProgress(std::string const &username, std::string const &media_id) {
+            // get the page count with session
+            // not implemented yet
+            return 0;
+
+            Log("Getting progress for " + username + " with book id: " + media_id);
+            transferVal.clear();
+            
+            std::string sql;
+            sql = "SELECT progress.progress FROM progress WHERE ;";
+            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+            // check if null or at max page count
+            return std::stoi(transferVal);
+        }
+
         /**
          * import() takes in the info for a book to be added to the database, gets a page count form the book,
          * generates a new filename, builds the new path to the file, moves the file, and then adds the book to

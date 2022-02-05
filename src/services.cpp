@@ -100,4 +100,12 @@ namespace services {
         glb_media.clear();
     }
 
+    float zoom = 100.0;
+    float getZoom() {
+        return zoom;
+    }
+    void setZoom(float const value) {
+        zoom = value;
+    }
+
 } // namespace services
