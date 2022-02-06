@@ -3,7 +3,7 @@
 <% template title() %><%= title %> :: Collection<% end %>
 
 <% template library_content() %>
-    <img class="collection-cover" src='/covers/vagabond-v01.jpg' alt='<%= collectionTitle %>'> 
+    <img class="collection-cover" src='/covers/<%= cover %>' alt='<%= collectionTitle %>'> 
     <h2><%= collectionTitle %></h2>
     <% foreach item in books %>
     <% item %>

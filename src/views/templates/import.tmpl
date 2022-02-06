@@ -13,10 +13,6 @@
                 <label for="title">Title:</label>
                 <input type="text" id="title" name="tilte" value='<%= item.title %>' required>
             </div>
-            <div class="sortTitle">
-                <label for="sort-title">Sort Title:</label>
-                <input type="text" id="sort-title" name="sort-tilte" value='<%= item.sortTitle %>' required>
-            </div>
             <div class="vnum">
                 <label for="vnum">Volume Number:</label>
                 <input type="number" id="vnum" name="vnum" <% if (item.volNum != 0) %>value='<%= item.volNum %>'<% end %> min="0">

@@ -10,7 +10,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 /**
  * @author  Andrew Mink
- * @date    24 January 2022
+ * @date    6 February 2022
  */
 
 #include <string>
@@ -23,10 +23,10 @@ You should have received a copy of the GNU Affero General Public License along w
 
 namespace services {
 
-    std::string logfile;
+    std::ofstream ofs;
     void setLogfile(std::string const &file) {
-        logfile = file;
-        std::string onOpen = "\n"\
+        ofs = std::ofstream(file, std::ofstream::app);
+        Log("\n"\
             "################################################################################\n"\
             "#                                                                              #\n"\
             "#           ###      ##         ##         ########      ##       ##           #\n"\
@@ -40,20 +40,17 @@ namespace services {
             "#                                                                              #\n"\
             "#                             The eReader for you                              #\n"\
             "#                                                                              #\n"\
-            "################################################################################\n";
-
-        Log(onOpen);
+            "################################################################################\n");
     }
     void Log(std::string message) {
-        if (logfile.empty()) {
-            throw std::runtime_error("logfile has not been set yet");
-        }
-        std::ofstream ofs { logfile, std::ofstream::app };
         if (!ofs.is_open()) {
-            throw std::invalid_argument(message + " is not a valid file");
+            throw std::runtime_error("Logfile has not been set or is not a valid file");
         }
+
         time_t now = std::time(nullptr);
         ofs << std::put_time(localtime(&now), "%F_%T") << ": " << message << std::endl;
+    }
+    void closeLog() {
         ofs.close();
     }
     
@@ -89,6 +86,10 @@ namespace services {
         pagesPath = path;
     };
 
+    // redesign use -> create list on first launch and update when importing a file
+    // create a list of collections seperate of this
+    // create a new variable for passing a list of books in a collection
+    //      -> put into database as a passed variable and return in function
     std::vector<content::Item> glb_media;
     std::vector<content::Item> getMediaList() {
         return glb_media;

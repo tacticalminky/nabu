@@ -22,6 +22,7 @@ namespace content {
     struct Collection : public Library {
         std::vector<Item> books;
         std::string collectionTitle;
+        std::string cover;
     };
 
     // Misc views

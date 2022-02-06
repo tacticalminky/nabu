@@ -8,6 +8,7 @@ namespace services {
 
     void setLogfile(std::string const &file);
     void Log(std::string message);
+    void closeLog();
 
     std::string getMediaPath();
     void setMediaPath(std::string const &path);

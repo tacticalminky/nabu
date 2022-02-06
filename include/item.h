@@ -12,6 +12,7 @@ namespace content {
         std::string sortTitle;
         std::string volume;    // can leave NULL
         std::string issue;
+        std::string cover;
         float progress;         // value or 0
         bool isCollection = false;
     };

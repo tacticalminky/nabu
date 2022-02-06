@@ -252,15 +252,17 @@ function closeAPIModal() {
     document.getElementById("matches-cnt").innerHTML = "";
 } // closeAPIModal()
 
-// sets what to do for each form on submit
+// sets what to do for each form on submit and api search
 const forms = document.forms;
 for (const form of forms) {
     form.addEventListener("submit", function(event) {
         event.preventDefault();
+
+        let title = form.elements['title'].value.trim();
         
         json = {
-            title : form.elements['title'].value.trim(),
-            sortTitle : form.elements['sort-title'].value.trim(),
+            title : title,
+            sortTitle : ((title.toLowerCase().indexOf("the ") == 0) ? title.slice(4).toLowerCase() : title.toLowerCase() ),
             volNum : form.elements['vnum'].value,
             issNum : form.elements['inum'].value,
             isbn : form.elements['isbn'].value.trim(),
@@ -273,9 +275,6 @@ for (const form of forms) {
             collection : form.elements['collection'].value.trim(),
             file : form.elements['file'].value
         }
-        
-        // handle validation -> sql compramising characters
-        // on error alert and cancel or correct an log
 
         console.log(json);
 

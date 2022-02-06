@@ -8,7 +8,7 @@
         <% if item.isCollection %>
         <div class="media-item">
             <p style="display: none;"><%= item.title %></p>
-            <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/vagabond-v01.jpg' alt='<%= item.title %>' loading="lazy"></a>
+            <a href='<% url "collection" using item.id %>'><img class="hover-shadow" src='/covers/<%= item.cover %>' alt='<%= item.title %>' loading="lazy"></a>
             <div class="progress"><div class="progress-bar" style='width: <%= item.progress %>%;'></div></div>
             <h2><%= item.title %></h2>
             <p><%= item.volume %> Volumes</p>

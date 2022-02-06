@@ -10,7 +10,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 /**
  * @author  Andrew Mink
- * @date    24 January 2022
+ * @date    6 February 2022
  */
 
 #include <cppcms/json.h>
@@ -104,12 +104,12 @@ namespace services {
          * collectionCallback() creates a content::Item for each entry returned by the sql requests and
          * the populates glb_media with the Item
          * 
-         * @param argv 0->collection_id, 1->title, 2->sort_title, 3->number_vol, 4->number_iss
+         * @param argv 0->collection_id, 1->title, 2->sort_title, 3->number_vol, 4->number_iss, 5->cover
          */
         static int collectionCallback(void* /* data */, int argc, char **argv, char ** /* azColName */) {
-            if (argc != 5) {
-                Log("collectionCallback() database query should contain 5 arguments, but has: " + std::to_string(argc));
-                throw std::invalid_argument("Database query should contain 5 arguments, but has: " + std::to_string(argc));
+            if (argc != 6) {
+                Log("collectionCallback() database query should contain 6 arguments, but has: " + std::to_string(argc));
+                throw std::invalid_argument("Database query should contain 6 arguments, but has: " + std::to_string(argc));
             }
             content::Item item;
             item.id             = std::string(argv[0]);
@@ -117,6 +117,7 @@ namespace services {
             item.sortTitle      = std::string(argv[2]);
             item.volume         = ((argv[3]) ? std::string(argv[3]) : "" );
             item.issue          = ((argv[4]) ? std::string(argv[4]) : "" );
+            item.cover          = std::string(argv[5]);
             item.progress       = 0; // get progress or 0
             item.isCollection   = true;
 
@@ -195,7 +196,7 @@ namespace services {
             }
             
             Log("Getting collections");
-            sql = "SELECT collections.collection_id, collections.title, collections.sort_title, collections.number_vol, collections.number_iss FROM collections;";
+            sql = "SELECT collections.collection_id, collections.title, collections.sort_title, collections.number_vol, collections.number_iss, collections.cover FROM collections;";
             res = sqlite3_exec(db, sql.c_str(), collectionCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
                 Log("SQL error: \n" + std::string(zErrMsg));
@@ -214,7 +215,7 @@ namespace services {
             Log("Getting books in the collection with id: " + collection_id);
             clearMediaList();
             std::string sql;
-            sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id=" + collection_id + " ORDER BY media.issue_num DESC;";
+            sql = "SELECT media.media_id, media.title, media.sort_title, media.volume_num, media.issue_num FROM media WHERE collection_id='" + collection_id + "' ORDER BY media.issue_num DESC;";
             int res = sqlite3_exec(db, sql.c_str(), mediaCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
                 Log("SQL error: \n" + std::string(zErrMsg));
@@ -265,16 +266,86 @@ namespace services {
         } // getDirectoryID()
 
         /**
-         * getCollectionID() checks the database for if the collection with the given name exists, if
-         * it does not exist the collection is created and the id is returned. If the collection does
-         * exits, the id is grabbed
-         * 
+         * addCollectionToDatabase() adds a new collection to the database
+         *  
          * @param name the name of the collection
          * @return the id of the collection
          */
-        std::string getCollectionID(std::string const &name) {
-            Log("Getting collection_id for " + name);
+        std::string addCollectionToDatabase(std::string const &name) {
+            Log("Making collection for " + name);
+
+            std::string sortTitle = "";
+            for (const auto& chr : name) {
+                sortTitle += (char) tolower(chr);
+            }
+            if (name.find("the ") == 0) {
+                sortTitle.erase(0,4);
+            }
+
+            std::hash<std::string> str_hash;
+            size_t hashVal = str_hash(name);
+            Log("Collection ID: " + std::to_string(hashVal));
+
+            std::string sql = "INSERT INTO collections (collection_id, title, sort_title, number_vol, cover)" \
+                "VALUES ('" + std::to_string(hashVal) + "', '" + name + "', '" + sortTitle + "', 1, 'default.png');";
+            int res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+
+            return std::to_string(hashVal);
+        } // addCollectionToDatabase()
+
+        /**
+         * getCollectionVolumeCount() gets the number of volumes in the collection
+         * 
+         * @param name the collection title 
+         * @return the number of volumes 
+         */
+        int getCollectionVolumeCount(std::string const &name) {
+            Log("Getting number_vol for " + name);
             transferVal.clear();
+
+            std::string sql = "SELECT collections.number_vol FROM collections WHERE title='" + name + "';";
+            int res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+
+            return std::stoi(transferVal);
+        }
+
+        /**
+         * updateCollectionVolumeCount() increments the volume count by 1 for a collection
+         * 
+         * @param name the title of the collection
+         */
+        void updateCollectionVolumeCount(std::string const &name) {
+            Log("Updating collection volume count for " + name);
+            
+            int newVolCount = getCollectionVolumeCount(name) + 1;
+            std::string sql = "UPDATE collections SET number_vol=" + std::to_string(newVolCount) + " WHERE title='" + name + "';";
+            int res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+            if (res != SQLITE_OK) {
+                Log("SQL error: \n" + std::string(zErrMsg));
+                throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+            }
+        }
+
+        /**
+         * getCollectionID() is used when adding a new book to the database with a collection.
+         * It checks the database for if the collection with the given name exists, if it does
+         * not exist the collection is created and the id is returned. If the collection does
+         * exits, the id is grabbed
+         * 
+         * @param name the name of the collection
+         * @param isAddingBoook true if adding a book to the database, false if otherwise
+         * @return the id of the collection
+         */
+        std::string getCollectionID(std::string const &name, bool const &isAddingBook) {
+            Log("Getting collection_id for " + name);
 
             std::string sql;
             struct sqlite3_stmt *selectstmt;
@@ -285,21 +356,20 @@ namespace services {
                 throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
             }
             if (sqlite3_step(selectstmt) != SQLITE_ROW) {
-                Log("Making collection for " + name);
-                // handle leading the for sort_title
-                std::hash<std::string> str_hash;
-                int hashVal = str_hash(name);
-                sql = "INSERT INTO collections (collection_id, title, sort_title)" \
-                    "VALUES (" + std::to_string(hashVal) + ", '" + name + "', '" + name + "');";
-                res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
-                if (res != SQLITE_OK) {
-                    Log("SQL error: \n" + std::string(zErrMsg));
-                    throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
+                if (isAddingBook) {
+                    return addCollectionToDatabase(name);
+                } else {
+                    Log("Collection " + name + " does not exist");
+                    throw std::invalid_argument("Collection " + name + " does not exist");
                 }
-                return std::to_string(hashVal);
             }
             sqlite3_finalize(selectstmt);
-            
+
+            if (isAddingBook) {
+                updateCollectionVolumeCount(name);
+            }
+
+            transferVal.clear();
             sql = "SELECT collections.collection_id FROM collections WHERE title='" + name + "';";
             res = sqlite3_exec(db, sql.c_str(), getCallback, 0, &zErrMsg);
             if (res != SQLITE_OK) {
@@ -382,43 +452,21 @@ namespace services {
         }
 
         /**
-         * import() takes in the info for a book to be added to the database, gets a page count form the book,
-         * generates a new filename, builds the new path to the file, moves the file, and then adds the book to
-         * the database.
+         * moveFile()
          * 
-         * @param json contains the information about the book in json format
+         * @param newDirectoryPath the path to the new file starting after /media/
+         * @param oldFilePath the path to the old file relative to import
+         * @return the new file path
          */
-        void import(cppcms::json::value json) {
-            Log("Importing a book to the database");
-
-            // open document, get page count and make cover 
-            fs::path oldFilePath(getImportPath() + json.get<std::string>("file")); // fix for recursive files
-            if (!fs::exists(oldFilePath)) {
-                Log("Can't find file: " + oldFilePath.string());
-                throw std::runtime_error("Can't find file: " + oldFilePath.string());
-            }
-
-            mupdf::Document *doc = new mupdf::Document(oldFilePath.c_str());
-            int totalPages = doc->count_pages();
-            
-            // build the new filename from the title and volume or issue of the book, keeping the same extension
-            std::string newFilename = json.get<std::string>("title");
-            if (!json.get<std::string>("volNum").empty()) {
-                newFilename.append(" - vol" + json.get<std::string>("volNum"));
-            } else if (!json.get<std::string>("issNum").empty()) {
-                newFilename.append(" - iss" + json.get<std::string>("issNum"));
-            }
-            // make cover image with newFilename
-            newFilename.append(oldFilePath.extension());
-
-            // create the new directories and add to the database 
-            fs::path newDirPathRelativeToMedia("media/" + json.get<std::string>("title")); // relative to /media
+        fs::path moveFile(std::string const &newDirectoryPath, fs::path const &oldFilePath, fs::path const &newFilename) {
+            Log("Creating new directory path for /media/" + newDirectoryPath + newFilename.string());
+            fs::path newDirPathRelativeToMedia("media/" + newDirectoryPath);
             fs::path newPath(getMediaPath());
             fs::path prevPart;
             for (const auto& part : newDirPathRelativeToMedia) {
                 newPath.append(part.c_str());
                 if (fs::create_directory(newPath)) {
-                    // directory was created -> add to database
+                    Log("Created directory " + part.string() + ": adding it to the database");
                     std::string sqlTMP;
                     sqlTMP = "INSERT INTO directories (parent_id, name)" \
                         "VALUES (" + getDirectoryID(prevPart.c_str()) + ",'" + part.c_str() + "');";
@@ -430,9 +478,43 @@ namespace services {
                 }
                 prevPart = part;
             }
-            newPath.append(newFilename);
-            Log("Moving: " + newFilename);
+            newPath.append(newFilename.string());
+
+            Log("Moving: " + newFilename.string());
             fs::rename(oldFilePath, newPath);
+
+            return newPath;
+        }
+
+        /**
+         * import() takes in the info for a book to be added to the database, gets a page count form the book,
+         * generates a new filename, builds the new path to the file, moves the file, and then adds the book to
+         * the database.
+         * 
+         * @param json contains the information about the book in json format
+         */
+        void import(cppcms::json::value json) {
+            Log("Importing " + json.get<std::string>("title") + " into the database");
+
+            // open document, get page count and make cover 
+            fs::path oldFilePath(getImportPath() + json.get<std::string>("file")); // fix for recursive files
+            if (!fs::exists(oldFilePath)) {
+                Log("Can't find file: " + oldFilePath.string());
+                throw std::runtime_error("Can't find file: " + oldFilePath.string());
+            }
+            mupdf::Document *doc = new mupdf::Document(oldFilePath.c_str());
+            int totalPages = doc->count_pages();
+            
+            // build the new filename from the title and volume or issue of the book, keeping the same extension
+            std::string newFilename = json.get<std::string>("title");
+            if (!json.get<std::string>("volNum").empty()) {
+                newFilename.append(" - vol" + json.get<std::string>("volNum"));
+            } else if (!json.get<std::string>("issNum").empty()) {
+                newFilename.append(" - iss" + json.get<std::string>("issNum"));
+            }
+            newFilename.append(oldFilePath.extension());
+
+            fs::path newPath(moveFile(json.get<std::string>("title"), oldFilePath, newFilename));
 
             // Insert the book into the media database with all the new infomation
             Log("Adding to database");
@@ -451,7 +533,7 @@ namespace services {
                     + ((json.get<std::string>("publisher").empty()) ? "NULL" : "'" + json.get<std::string>("publisher") + "'" ) + ","
                     + ((json.get<std::string>("genere").empty()) ? "NULL" : "'" + json.get<std::string>("genere") + "'" ) + ",'"
                     + json.get<std::string>("type") + "',"
-                    + ((json.get<std::string>("collection").empty()) ? "NULL" : getCollectionID(json.get<std::string>("collection")) ) + ",'"
+                    + ((json.get<std::string>("collection").empty()) ? "NULL" : "'" + getCollectionID(json.get<std::string>("collection"), true) + "'" ) + ",'"
                     + newFilename + "','"
                     + getDirectoryID(newPath.parent_path().filename()) +
                 "');";

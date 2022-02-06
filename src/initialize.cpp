@@ -15,19 +15,11 @@ You should have received a copy of the GNU Affero General Public License along w
 #include <sqlite3.h>
 #include <iostream>
 
-static int callback(void* data, int argc, char **argv, char **azColName) {
-    std::cout << (const char*)data << std::endl;
-    for (int i = 0; i < argc; i++) {
-        std::cout << std::string(azColName[i]) << " = " << ((argv[i]) ? std::string(argv[i]) : "NULL") << std::endl;
-    }
-    return 0;
-}
-
-int main(int argc, char ** argv) {
+int main(int /* argc */, char ** /* argv */) {
     sqlite3 *db;
     char *zErrMsg = 0;
     
-    int res = sqlite3_open("./testing/database/test.db", &db);
+    int res = sqlite3_open("./bin/testing/database/test.db", &db);
     if (res) {
         throw std::invalid_argument("Database failed to open: " + std::string(sqlite3_errmsg(db)));
     }
@@ -40,25 +32,26 @@ int main(int argc, char ** argv) {
         "parent_id      INT," \
         "name           TEXT        UNIQUE NOT NULL," \
         "FOREIGN KEY(parent_id) REFERENCES directories(directory_id) ON DELETE CASCADE );";
-    res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+    res = sqlite3_exec(db, sql.c_str(), 0, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
     }
     std::cout << "Created directories database table successfully" << std::endl;
             
     sql = "CREATE TABLE collections(" \
-        "collection_id  INT         PRIMARY KEY," \
+        "collection_id  TEXT        PRIMARY KEY," \
         "title          TEXT        UNIQUE NOT NULL," \
         "sort_title     TEXT        UNIQUE NOT NULL," \
         "authors        TEXT," \
         "illistrators   TEXT," \
         "publisher      TEXT," \
         "generes        TEXT," \
-        "number_vol     INT," \
-        "number_iss     INT," \
+        "number_vol     TINYINT," \
+        "number_iss     TINYINT," \
         "start_date     CHAR(10)," \
-        "end_date       CHAR(10) );";
-    res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+        "end_date       CHAR(10),"\
+        "cover          TEXT        NOT NULL);";
+    res = sqlite3_exec(db, sql.c_str(), 0, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
     }
@@ -71,19 +64,19 @@ int main(int argc, char ** argv) {
         "volume_num     INT," \
         "issue_num      INT," \
         "isbn           CHAR(18)    UNIQUE," \
-        "total_pages    INT         NOT NULL," \
+        "total_pages    TINYINT     UNSIGNED NOT NULL," \
         "date           CHAR(10)," \
         "author         TEXT," \
         "illistrator    TEXT," \
         "publisher      TEXT," \
         "genere         TEXT," \
         "type           TEXT        NOT NULL," \
-        "collection_id  INT," \
+        "collection_id  TEXT," \
         "filename       TEXT        UNIQUE NOT NULL," \
         "file_loc       INT         NOT NULL," \
         "FOREIGN KEY(collection_id) REFERENCES collection(collection_id) ON DELETE SET NULL," \
         "FOREIGN KEY(file_loc) REFERENCES directories(directory_id) );"; // maybe have it CASCADE -> could be bad though
-    res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+    res = sqlite3_exec(db, sql.c_str(), 0, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
     }
@@ -96,7 +89,7 @@ int main(int argc, char ** argv) {
         "email          TEXT        UNIQUE," \
         "privileges     CHAR(5)     NOT NULL," \
         "enabled        BOOLEAN     NOT NULL );";
-    res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+    res = sqlite3_exec(db, sql.c_str(), 0, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
     }
@@ -105,7 +98,7 @@ int main(int argc, char ** argv) {
     sql = "CREATE TABLE progress(" \
         "user_id        INT         PRIMARY KEY," \
         "FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE );";
-    res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+    res = sqlite3_exec(db, sql.c_str(), 0, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
     }
@@ -117,7 +110,7 @@ int main(int argc, char ** argv) {
         "VALUES ('media');" \
         "INSERT INTO users (username, password_hash, privileges, enabled)" \
         "VALUES ('root', '" + std::to_string(str_hash("admin")) + "', 'admin', 1);";
-    res = sqlite3_exec(db, sql.c_str(), callback, 0, &zErrMsg);
+    res = sqlite3_exec(db, sql.c_str(), 0, 0, &zErrMsg);
     if (res != SQLITE_OK ) {
         throw std::runtime_error("SQL error: \n" + std::string(zErrMsg));
     }

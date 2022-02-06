@@ -10,8 +10,7 @@ You should have received a copy of the GNU Affero General Public License along w
 
 /**
  * @author  Andrew Mink
- * @version alpha
- * @date    31 January 2022
+ * @date    6 February 2022
  * 
  * Website is the main application that the other applications attach to and run from. WebSite handles
  * the construction of the website and url dispatching.
@@ -149,9 +148,11 @@ void Website::collection(std::string id) {
         return;
     }
     // adjust what is being searched -> refresh removes the name
+    services::database::getMedia(); // temporary fix, but increases load times
     for (content::Item item : services::getMediaList()) {
         if (id == item.id) {
             cnt.collectionTitle = item.title;
+            cnt.cover = item.cover;
             break;
         }
     }
@@ -168,8 +169,9 @@ void Website::import() {
     if (!ini(cnt)) {
         return;
     }
-    services::Log("Building import view");
+    services::Log("Grabbing new files for importing");
     // make recursive_directory_iterator when I can handle it
+    int count = 0;
     for (const auto& entry : fs::directory_iterator(services::getImportPath())) {
         if (entry.is_directory()) {
             continue;
@@ -184,9 +186,11 @@ void Website::import() {
         content::ImportItem item;
         item.file = file.filename();
         item.title = file.stem();
-        item.sortTitle = file.stem(); // handle a beginning the
         cnt.imports.push_back(item);
+
+        count++;
     }
+    services::Log("Found " + std::to_string(count) + " new files");
     render("import", cnt);
 }
 
@@ -207,8 +211,10 @@ void Website::login() {
     content::Login cnt;
     cnt.title = settings().get<std::string>("app.title");
     if (request().request_method() == "POST" && session().is_set("prelogin")) {
+        services::Log("Attempted login for user: " + cnt.login.username.value());
         cnt.login.load(context());
         if (cnt.login.validate() && services::database::validateLogin(cnt.login.username.value(), cnt.login.password.value())) {
+            services::Log("Successful login");
             session().reset_session();
             session().erase("prelogin");
             session().set("username", cnt.login.username.value());
@@ -231,26 +237,31 @@ void Website::login() {
  * @return false if user cannot navigate to the page, and true otherwise
  */
 bool Website::settingsView(content::Settings &cnt) {
-    services::Log("Attempting to view settings");
+    services::Log(session()["username"] + "is attempting to view settings");
     if (!ini(cnt)) {
         return false;
     }
     cnt.hasAdmin = false;
     std::string perms = services::database::getPermissions(session()["username"]);
     if (perms != "user" && perms != "admin") {
+        services::Log("Access denined");
         response().set_redirect_header("/403");
         return false;
     }
     if ((std::string(typeid(cnt).name()) == "N7content4UserE") || (std::string(typeid(cnt).name()) == "N7content7AccountE")) {
         if (perms == "admin") {
+            services::Log("Access granted with admin privilages");
             cnt.hasAdmin = true;
         }
+        services::Log("Access granted with user privilages");
         return true;
     }
     if (perms != "admin") {
+        services::Log("Access denined");
         response().set_redirect_header("/403");
         return false;
     }
+    services::Log("Access granted with admin privilages");
     cnt.hasAdmin = true;
     return true;
 }
