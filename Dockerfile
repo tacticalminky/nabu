@@ -51,7 +51,7 @@ COPY --from=builder /usr/local/lib/libcppcms.* \
 COPY --from=builder /var/www/* /var/www/
 
 # Create Directory Files and mount the volumes
-RUN mkdir /appdata /appdata/database /appdata/logs /imports && touch /appdata/logs/nabu.log && chmod 664 /appdata/logs/nabu.log
+RUN mkdir /appdata /appdata/database /appdata/logs /imports 
 COPY --from=builder /opt/nabu/bin/nabu.db /appdata/database/nabu.db
 ADD bin/covers/default.png /appdata/covers/default.png
 VOLUME [ "/appdata", "/media", "/imports" ]

@@ -28,7 +28,8 @@
         }
     },
     "service" : {  
-        "api" : "http",  
+        "api" : "http",
+        "ip" : "0.0.0.0", 
         "port" : 8080  
     },
     "http" : {  
@@ -42,7 +43,7 @@
     },
     "file_server" : {
         "enable" : true,
-        "document_root" : "/var/www/resources",
+        "document_root" : "/var/www/",
         "alias" : [
             { "url" : "/covers", "path" : "/appdata/covers/" },
             { "url" : "/pages", "path" : "/tmp/pages/" }

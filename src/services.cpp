@@ -25,7 +25,7 @@ namespace services {
 
     std::ofstream ofs;
     void setLogfile(std::string const &file) {
-        ofs = std::ofstream(file, std::ofstream::app);
+        ofs = std::ofstream(file);
         Log("\n"\
             "################################################################################\n"\
             "#                                                                              #\n"\
