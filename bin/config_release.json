@@ -1,0 +1,60 @@
+{  
+    "app" : {
+        "title" : "Nabu",
+        "settings" : {
+            "user" : {
+                "default" : {}
+            },
+            "account" : {
+                "default" : {}
+            },
+            "admin" : {
+                "page_chunk_size" : {
+                    "forward" : 5,
+                    "backward" : 3
+                },
+                "logfile" : "/appdata/logs/nabu.log",
+                "paths" : {
+                    "db" : "/appdata/database/nabu.db",
+                    "media" : "/media",
+                    "tmp" : "/tmp/pages/",
+                    "import" : "/imports/",
+                    "covers" : "/appdata/covers/"
+                }
+            },
+            "account_manager" : {},
+            "media_manager" : {},
+            "meintenance" : {}
+        }
+    },
+    "service" : {  
+        "api" : "http",  
+        "port" : 8080  
+    },
+    "http" : {  
+        "script" : "/mb.fcgi",  
+        "rewrite" : [  
+            { "regex" : "/resources(/.+)", "pattern" : "$1" },
+            { "regex" : "/covers(/.+)", "pattern" : "$0" },
+            { "regex" : "/pages(/.+)", "pattern" : "$0" },
+            { "regex" : ".*" , "pattern" : "/mb.fcgi$0" }  
+        ]  
+    },
+    "file_server" : {
+        "enable" : true,
+        "document_root" : "/var/www/resources",
+        "alias" : [
+            { "url" : "/covers", "path" : "/appdata/covers/" },
+            { "url" : "/pages", "path" : "/tmp/pages/" }
+        ]
+    },
+    "session" : {
+        "expire" : "renew",
+        "timeout" : 604800,
+        "location" : "client",
+        "client" : {
+            "hmac" : "sha1",
+            "hmac_key" : "3891bbf7f845fd4277008a63d72640fc13bb9a31"
+        }
+    } 
+}

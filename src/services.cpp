@@ -86,6 +86,7 @@ namespace services {
         pagesPath = path;
     };
 
+    // TODO:
     // redesign use -> create list on first launch and update when importing a file
     // create a list of collections seperate of this
     // create a new variable for passing a list of books in a collection

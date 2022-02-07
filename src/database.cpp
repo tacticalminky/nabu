@@ -93,7 +93,7 @@ namespace services {
             item.sortTitle      = std::string(argv[2]);
             item.volume         = ((argv[3]) ? std::string(argv[3]) : "" );
             item.issue          = ((argv[4]) ? std::string(argv[4]) : "" );
-            item.progress       = 0; // get progress or 0
+            item.progress       = 0; // TODO: get progress or 0
             item.isCollection   = false;
 
             addToMediaList(item);            
@@ -118,7 +118,7 @@ namespace services {
             item.volume         = ((argv[3]) ? std::string(argv[3]) : "" );
             item.issue          = ((argv[4]) ? std::string(argv[4]) : "" );
             item.cover          = std::string(argv[5]);
-            item.progress       = 0; // get progress or 0
+            item.progress       = 0; // TODO: get progress or 0
             item.isCollection   = true;
 
             addToMediaList(item);            
@@ -426,6 +426,7 @@ namespace services {
         }
 
         /**
+         * TODO:
          * getProgress() grabs the progress of the user for a book
          * 
          * @param username the name of the user
@@ -572,7 +573,7 @@ namespace services {
             }
             if (sqlite3_step(selectstmt) == SQLITE_ROW) {
                 Log("User is valid");
-                // check if user is enabled -> return false
+                // TODO: check if user is enabled -> return false
                 return true;
             }
             sqlite3_finalize(selectstmt);

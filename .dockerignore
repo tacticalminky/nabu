@@ -1,0 +1,19 @@
+.archive/*
+.gitignore
+
+### Testing materials ###
+bin/testing/*
+bin/config.json
+Makefile
+
+### Build files ###
+bin/exec
+bin/init
+bin/debug
+src/views/myskin.cpp
+
+### VSCode files ###
+.vscode/*
+
+### Various tmp files ###
+*.swp

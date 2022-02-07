@@ -43,6 +43,8 @@ Website::Website(cppcms::service &srv) : cppcms::application(srv) {
     services::setImportPath(settings().get<std::string>("app.settings.admin.paths.import"));
     services::setPagesPath(settings().get<std::string>("app.settings.admin.paths.tmp"));
 
+    fs::create_directories(services::getPagesPath());
+
     services::Log("Launching website");
     
     attach(new services::ReadingRPC(srv),"/reading-rpc(/(\\d+)?)?",0);
@@ -147,7 +149,7 @@ void Website::collection(std::string id) {
     if (!ini(cnt)) {
         return;
     }
-    // adjust what is being searched -> refresh removes the name
+    // TODO: adjust what is being searched -> refresh removes the name
     services::database::getMedia(); // temporary fix, but increases load times
     for (content::Item item : services::getMediaList()) {
         if (id == item.id) {
@@ -170,7 +172,7 @@ void Website::import() {
         return;
     }
     services::Log("Grabbing new files for importing");
-    // make recursive_directory_iterator when I can handle it
+    // TODO: make recursive_directory_iterator when I can handle it
     int count = 0;
     for (const auto& entry : fs::directory_iterator(services::getImportPath())) {
         if (entry.is_directory()) {
@@ -218,7 +220,7 @@ void Website::login() {
             session().reset_session();
             session().erase("prelogin");
             session().set("username", cnt.login.username.value());
-            // grab user preferences
+            // TODO: grab user preferences
             cnt.login.clear();
             response().set_redirect_header("/");
             return;

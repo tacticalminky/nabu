@@ -19,7 +19,7 @@ int main(int /* argc */, char ** /* argv */) {
     sqlite3 *db;
     char *zErrMsg = 0;
     
-    int res = sqlite3_open("./bin/testing/database/test.db", &db);
+    int res = sqlite3_open("bin/nabu.db", &db);
     if (res) {
         throw std::invalid_argument("Database failed to open: " + std::string(sqlite3_errmsg(db)));
     }

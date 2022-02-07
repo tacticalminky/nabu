@@ -13,11 +13,11 @@
                     "forward" : 5,
                     "backward" : 3
                 },
-                "logfile" : "./bin/testing/nabu.log",
+                "logfile" : "/home/mink/nabu/bin/testing/nabu.log",
                 "paths" : {
                     "db" : "./bin/testing/database/test.db",
                     "media" : "./bin/testing",
-                    "tmp" : "./bin/testing/tmp/pages/",
+                    "tmp" : "/tmp/pages/",
                     "import" : "./bin/testing/imports/",
                     "covers" : "./bin/testing/covers/"
                 }
