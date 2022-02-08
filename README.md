@@ -19,3 +19,5 @@ Run:
         tacticalminky/nabu
 
 Then you can connect to the container at `http://localhost:8080`
+
+The default user is root with the password admin. The ability to add users will be added at a later time.
