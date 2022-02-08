@@ -1,37 +1,49 @@
 # syntax=docker/dockerfile:1
-FROM ubuntu AS builder
+FROM ubuntu AS dependencies
 
-ENV TZ="America/Chicago"
-ENV CXX="clang++"
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+# Install dependencies
+ENV TZ="America/Chicago" \
+    CXX="clang++"
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    apt update --allow-insecure-repositories && \
+    apt install -y git cmake clang libicu-dev python sqlite3 libsqlite3-dev python-clang-9 bear swig libpcre3-dev zlib1g-dev
 
 WORKDIR /opt
-# Intall Library Dependencies
-RUN apt update --allow-insecure-repositories && apt install -y git cmake clang libicu-dev python sqlite3 libsqlite3-dev python-clang-9 bear swig libpcre3-dev zlib1g-dev
-
-# Install CppCMS Libraries
+# Install CppCMS libraries
 RUN git clone https://github.com/artyom-beilis/cppcms.git cppcms
 RUN mkdir cppcms/build && cd cppcms/build && cmake .. && make install && cd ../..
 
-# Install MuPDF Libraries
+# Install MuPDF libraries
 RUN git clone --recursive git://git.ghostscript.com/mupdf.git mupdf
 RUN cd mupdf && ./scripts/mupdfwrap.py -b m01 && mv build/shared-release/libmupdf*.so /usr/local/lib/
 
+# Build files and debug
+FROM dependencies AS builder
+
+ENV LD_LIBRARY_PATH="/usr/local/lib/"
+RUN apt update && \
+    apt install -y valgrind
+
+# Copy files and make executable
 WORKDIR /opt/nabu
-# Copy src files
 ADD src src/
 ADD include include/
-RUN mv /opt/mupdf/platform/c++/include/* include/ && mv /opt/mupdf/include/mupdf/* include/mupdf/
 ADD Makefile_release Makefile
+RUN mv /opt/mupdf/platform/c++/include/* include/ && \
+    mv /opt/mupdf/include/mupdf/* include/mupdf/ && \
+    mkdir /var/www /appdata /appdata/logs /appdata/database && \
+    make init &&  \
+    make
+ADD bin/covers/default.png /appdata/covers/default.png
 
-RUN mkdir bin /var/www && make init && make
-
-ADD bin/resources /var/www/resources
-ADD bin/config_release.json /var/www/config.json
+WORKDIR /var/www
+ADD bin/resources .
+ADD bin/config_release.json config.json
 
 FROM busybox:glibc
 
-COPY --from=builder /usr/local/lib/libcppcms.* \
+# Copy dependencies
+COPY --from=dependencies /usr/local/lib/libcppcms.* \
     /usr/local/lib/libbooster.* \
     /usr/local/lib/libmupdf* \
     /usr/lib/x86_64-linux-gnu/libsqlite3.so.0 \
@@ -48,12 +60,9 @@ COPY --from=builder /usr/local/lib/libcppcms.* \
     /usr/lib/x86_64-linux-gnu/libdl.so.2 \
     /usr/lib/x86_64-linux-gnu/libicudata.* \
     /usr/lib/
-COPY --from=builder /var/www/* /var/www/
+COPY --from=builder /var/www /var/www
+COPY --from=builder /appdata /appdata
 
-# Create Directory Files and mount the volumes
-RUN mkdir /appdata /appdata/database /appdata/logs /imports 
-COPY --from=builder /opt/nabu/bin/nabu.db /appdata/database/nabu.db
-ADD bin/covers/default.png /appdata/covers/default.png
 VOLUME [ "/appdata", "/media", "/imports" ]
 
 CMD ["/var/www/exec","-c","/var/www/config.json"]

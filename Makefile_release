@@ -9,6 +9,9 @@ SRC = $(SKIN) $(patsubst %,src/%,$(_SRC))
 _TEMPLATES = master.tmpl library.tmpl upnext.tmpl collection.tmpl import.tmpl help.tmpl login.tmpl page_not_found.tmpl forbidden.tmpl settings.tmpl user.tmpl account.tmpl general.tmpl account_management.tmpl media_management.tmpl meintenance.tmpl
 TEMPLATES = $(patsubst %,src/views/templates/%,$(_TEMPLATES))
 
+exec: /var/www/exec
+debug: /var/www/exec_debug
+
 /var/www/exec: $(SRC)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
@@ -21,8 +24,12 @@ $(SKIN): ${TEMPLATES}
 init: /tmp/init
 	$<
 
+/var/www/exec_debug: $(SRC)
+	$(CXX) $(CXXFLAGS) -g -O0 $^ -o $@ $(LIBS)
+
+
 clean:
 	rm -f bin/exec $(SKIN) cppcms_rundir
 
-.DEFAULT_GOAL := /var/www/exec
+.DEFAULT_GOAL := exec
 .PHONEY := init clean

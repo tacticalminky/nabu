@@ -29,8 +29,8 @@ init: bin/init
 bin/debug: $(SRC)
 	$(CXX) $(CXXFLAGS) -g -O0 $^ -o $@ $(LIBS)
 
-debug: bin/debug config.josn
-	valgrind --leak-check=yes $< -c ./bin/config.json
+debug: bin/debug bin/config.json
+	valgrind --leak-check=yes $< -c bin/config.json
 
 clean:
 	rm -f bin/exec bin/init bin/debug $(SKIN) ./bin/testing/tmp/pages/* cppcms_rundir

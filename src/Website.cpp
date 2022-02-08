@@ -213,8 +213,8 @@ void Website::login() {
     content::Login cnt;
     cnt.title = settings().get<std::string>("app.title");
     if (request().request_method() == "POST" && session().is_set("prelogin")) {
-        services::Log("Attempted login for user: " + cnt.login.username.value());
         cnt.login.load(context());
+        services::Log("Attempted login for user: " + cnt.login.username.value());
         if (cnt.login.validate() && services::database::validateLogin(cnt.login.username.value(), cnt.login.password.value())) {
             services::Log("Successful login");
             session().reset_session();
@@ -239,10 +239,11 @@ void Website::login() {
  * @return false if user cannot navigate to the page, and true otherwise
  */
 bool Website::settingsView(content::Settings &cnt) {
-    services::Log(session()["username"] + "is attempting to view settings");
     if (!ini(cnt)) {
         return false;
     }
+    services::Log(session()["username"] + "is attempting to view settings");
+
     cnt.hasAdmin = false;
     std::string perms = services::database::getPermissions(session()["username"]);
     if (perms != "user" && perms != "admin") {
